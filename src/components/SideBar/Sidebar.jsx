@@ -5,7 +5,7 @@ import rocket from "../../assets/rocket.png";
 
 const Sidebar = () => {
   return (
-    <div className="bg-[#111b2f] w-50 h-screen flex flex-col">
+    <div className="bg-[#111b2f] w-50 h-screen flex flex-col fixed">
         <div></div>
 
         <div className='flex flex-col my-4 gap-3'>
