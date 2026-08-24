@@ -91,8 +91,9 @@ const ExploreSidebar = () => {
       </div>
 
 
+
       {/* Contribution tip */}
-      <div className="p-5 text-white bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl shadow-sm">
+      <div className="p-5 text-white bg-linear-to-br from-indigo-600 to-purple-600 rounded-xl shadow-sm">
 
         <p className="text-sm font-semibold">Ready to contribute?</p>
 

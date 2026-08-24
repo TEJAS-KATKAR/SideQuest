@@ -10,6 +10,8 @@ const ExploreFilters = () => {
     activity: ''
   })
 
+
+  
   const [beginner, setBeginner] = useState(false)
 
   const [openFilter, setOpenFilter] = useState(null)

@@ -8,6 +8,7 @@ const ExploreHeader = () => {
     console.log('Searching for:', search)
   }
 
+  
   return (
     <div className="flex flex-col gap-6">
 
