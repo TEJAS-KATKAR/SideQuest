@@ -10,23 +10,56 @@ const RepositoryDetails = () => {
   const [activeTab, setActiveTab] = useState('Overview')
   const [copied, setCopied] = useState(false)
   const [repository, setRepository] = useState(null)
+  const [languages, setLanguages] = useState([])
+  const [releases, setReleases] = useState([])
+  const [commits, setCommits] = useState([])
+  const [contributors, setContributors] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   useEffect(() => {
-    const fetchRepository = async () => {
+    const fetchRepositoryData = async () => {
       try {
         setLoading(true)
         setError('')
 
-        const response = await fetch(`http://localhost:5000/api/repositories/${owner}/${repo}`)
+        const [
+          repositoryResponse,
+          languagesResponse,
+          releasesResponse,
+          commitsResponse,
+          contributorsResponse
+        ] = await Promise.all([
+          fetch(`http://localhost:5000/api/repositories/${owner}/${repo}`),
+          fetch(`http://localhost:5000/api/repositories/${owner}/${repo}/languages`),
+          fetch(`http://localhost:5000/api/repositories/${owner}/${repo}/releases`),
+          fetch(`http://localhost:5000/api/repositories/${owner}/${repo}/commits`),
+          fetch(`http://localhost:5000/api/repositories/${owner}/${repo}/contributors`)
+        ])
 
-        if (!response.ok) {
+        if (!repositoryResponse.ok) {
           throw new Error('Repository not found')
         }
 
-        const data = await response.json()
-        setRepository(data)
+        const repositoryData = await repositoryResponse.json()
+
+        setRepository(repositoryData)
+
+        if (languagesResponse.ok) {
+          setLanguages(await languagesResponse.json())
+        }
+
+        if (releasesResponse.ok) {
+          setReleases(await releasesResponse.json())
+        }
+
+        if (commitsResponse.ok) {
+          setCommits(await commitsResponse.json())
+        }
+
+        if (contributorsResponse.ok) {
+          setContributors(await contributorsResponse.json())
+        }
       } catch (error) {
         console.error(error)
         setError(error.message)
@@ -35,7 +68,7 @@ const RepositoryDetails = () => {
       }
     }
 
-    fetchRepository()
+    fetchRepositoryData()
   }, [owner, repo])
 
   const cloneCommand = `git clone https://github.com/${owner}/${repo}.git`
@@ -76,6 +109,52 @@ function Counter() {
     })
   }
 
+  const getActivity = () => {
+    if (!repository || repository.archived) {
+      return {
+        label: 'Archived',
+        description: 'No longer actively developed'
+      }
+    }
+
+    if (!repository.pushedAt) {
+      return {
+        label: 'Unknown',
+        description: 'Activity information is unavailable'
+      }
+    }
+
+    const daysSincePush = Math.floor(
+      (Date.now() - new Date(repository.pushedAt).getTime()) / 86400000
+    )
+
+    if (daysSincePush <= 7) {
+      return {
+        label: 'Very active',
+        description: 'Recent changes are being made frequently'
+      }
+    }
+
+    if (daysSincePush <= 30) {
+      return {
+        label: 'Active',
+        description: 'Repository has been updated recently'
+      }
+    }
+
+    if (daysSincePush <= 90) {
+      return {
+        label: 'Moderately active',
+        description: 'Repository has received recent updates'
+      }
+    }
+
+    return {
+      label: 'Low activity',
+      description: 'The repository has not been updated recently'
+    }
+  }
+
   if (loading) {
     return (
       <div className="px-8 py-10">
@@ -105,11 +184,11 @@ function Counter() {
 
   const githubUrl = repository.url
   const repositoryName = repository.fullName || `${repository.owner}/${repository.name}`
+  const activity = getActivity()
 
   return (
     <div className="px-8 py-5">
 
-      {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
         <button onClick={() => navigate('/explore')} className="text-indigo-600 font-medium hover:text-indigo-800 transition">
           Explore
@@ -120,7 +199,6 @@ function Counter() {
         <span className="font-semibold text-gray-800">{repository.name}</span>
       </div>
 
-      {/* Repository Header */}
       <div className="flex items-start justify-between">
 
         <div className="flex items-center gap-4">
@@ -146,19 +224,10 @@ function Counter() {
                 {repository.owner}
               </span>
 
-              {!repository.archived && (
-                <span className="flex items-center gap-1 text-green-600">
-                  <CircleDot size={14}/>
-                  Active
-                </span>
-              )}
-
-              {repository.archived && (
-                <span className="flex items-center gap-1 text-orange-600">
-                  <CircleDot size={14}/>
-                  Archived
-                </span>
-              )}
+              <span className={`flex items-center gap-1 ${repository.archived ? 'text-orange-600' : 'text-green-600'}`}>
+                <CircleDot size={14}/>
+                {activity.label}
+              </span>
             </div>
           </div>
         </div>
@@ -178,7 +247,6 @@ function Counter() {
 
       </div>
 
-      {/* Repository Stats */}
       <div className="grid grid-cols-6 bg-white border border-gray-200 rounded-xl shadow-sm mt-5">
 
         <div className="flex items-center gap-3 px-5 py-4 border-r border-gray-100">
@@ -231,7 +299,6 @@ function Counter() {
 
       </div>
 
-      {/* Tabs */}
       <div className="flex items-center gap-1 mt-5 border-b border-gray-200">
         {tabs.map((tab) => (
           <button key={tab} onClick={() => setActiveTab(tab)} className={`flex items-center gap-2 px-5 py-3 text-sm font-medium transition border-b-2 ${activeTab === tab ? 'text-indigo-600 border-indigo-600' : 'text-gray-500 border-transparent hover:text-gray-900'}`}>
@@ -250,12 +317,10 @@ function Counter() {
         ))}
       </div>
 
-      {/* Main Content */}
       <div className="flex items-start gap-6 mt-4">
 
         <div className="flex-1 min-w-0">
 
-          {/* About / Technologies / Topics */}
           <div className="grid grid-cols-3 gap-5">
 
             <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
@@ -315,18 +380,10 @@ function Counter() {
                   <p className="text-sm text-gray-500">No topics available.</p>
                 )}
               </div>
-
-              {repository.topics.length > 0 && (
-                <button className="flex items-center gap-1 text-sm text-indigo-600 font-semibold mt-5 hover:text-indigo-800 transition">
-                  View all topics
-                  <ArrowUpRight size={14}/>
-                </button>
-              )}
             </div>
 
           </div>
 
-          {/* README */}
           <div className="bg-white border border-gray-200 rounded-xl shadow-sm mt-5 overflow-hidden">
 
             <div className="px-5 py-4 border-b border-gray-100">
@@ -377,7 +434,6 @@ function Counter() {
                 </div>
               </div>
 
-              {/* Code Snippet */}
               <div className="rounded-lg overflow-hidden bg-[#182033] border border-gray-700 shadow-sm transition-all duration-300 hover:border-indigo-500 hover:shadow-[0_0_24px_rgba(99,102,241,0.35)]">
 
                 <div className="flex items-center justify-between px-4 py-3 bg-[#111827] border-b border-gray-700">
@@ -401,7 +457,6 @@ function Counter() {
             </div>
           </div>
 
-          {/* Bottom Sections */}
           <div className="grid grid-cols-3 gap-5 mt-5">
 
             <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
@@ -527,25 +582,24 @@ function Counter() {
 
         </div>
 
-        {/* Right Sidebar */}
         <aside className="w-72 shrink-0 flex flex-col gap-5">
 
-          {/* Repository Activity */}
           <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+
             <div className="flex items-center gap-2">
               <CircleDot size={16} className="text-green-500"/>
               <p className="text-sm font-bold text-gray-900">REPOSITORY ACTIVITY</p>
             </div>
 
             <div className="flex items-center gap-2 mt-5">
-              <span className={`w-2.5 h-2.5 rounded-full ${repository.archived ? 'bg-orange-500' : 'bg-green-500'}`}></span>
+              <span className={`w-2.5 h-2.5 rounded-full ${repository.archived ? 'bg-orange-500' : activity.label === 'Low activity' ? 'bg-gray-400' : 'bg-green-500'}`}></span>
               <p className="text-base font-semibold text-gray-900">
-                {repository.archived ? 'Archived' : 'Active'}
+                {activity.label}
               </p>
             </div>
 
             <p className="text-sm text-gray-500 mt-1">
-              {repository.archived ? 'No longer actively developed' : 'Repository is actively maintained'}
+              {activity.description}
             </p>
 
             <p className="text-sm font-semibold text-gray-800 mt-6">
@@ -553,6 +607,7 @@ function Counter() {
             </p>
 
             <div className="flex flex-col gap-3 mt-4">
+
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">Open issues</span>
                 <span className="font-medium">{formatNumber(repository.openIssues)}</span>
@@ -569,18 +624,31 @@ function Counter() {
               </div>
 
               <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Contributors</span>
+                <span className="font-medium">{contributors ? contributors.count : '—'}</span>
+              </div>
+
+              <div className="flex justify-between text-sm">
                 <span className="text-gray-500">Last push</span>
                 <span className="font-medium">{formatDate(repository.pushedAt)}</span>
               </div>
+
             </div>
 
-            <a href={githubUrl} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-1 w-full text-sm text-indigo-600 font-semibold mt-5 hover:text-indigo-800 transition">
-              View repository activity
-              <ArrowUpRight size={14}/>
-            </a>
+            {commits.length > 0 && (
+              <div className="mt-5 pt-4 border-t border-gray-100">
+                <p className="text-xs font-semibold text-gray-700">Latest commit</p>
+                <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+                  {commits[0].message}
+                </p>
+                <p className="text-[10px] text-gray-400 mt-1">
+                  {formatDate(commits[0].date)}
+                </p>
+              </div>
+            )}
+
           </div>
 
-          {/* Repository Details */}
           <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
             <p className="text-sm font-bold text-gray-900">REPOSITORY DETAILS</p>
 
@@ -617,54 +685,92 @@ function Counter() {
             </div>
           </div>
 
-          {/* Popular Languages */}
           <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+
             <p className="text-sm font-bold text-gray-900">POPULAR LANGUAGES</p>
 
-            <div className="mt-5">
-              {repository.language ? (
-                <div>
-                  <div className="flex justify-between text-xs">
-                    <span className="flex items-center gap-2 font-medium text-gray-700">
-                      <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
-                      {repository.language}
-                    </span>
+            <div className="flex flex-col gap-4 mt-5">
 
-                    <span className="text-gray-500">Primary</span>
+              {languages.length > 0 ? (
+                languages.slice(0, 5).map((language) => (
+                  <div key={language.name}>
+
+                    <div className="flex items-center justify-between text-xs">
+
+                      <span className="flex items-center gap-2 font-medium text-gray-700">
+                        <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
+                        {language.name}
+                      </span>
+
+                      <span className="text-gray-500">
+                        {language.percentage}%
+                      </span>
+
+                    </div>
+
+                    <div className="h-1.5 bg-gray-100 rounded-full mt-2 overflow-hidden">
+                      <div
+                        className="h-full bg-indigo-500 rounded-full"
+                        style={{width: `${language.percentage}%`}}
+                      ></div>
+                    </div>
+
                   </div>
-
-                  <div className="h-1.5 bg-gray-100 rounded-full mt-2 overflow-hidden">
-                    <div className="h-full w-full bg-indigo-500 rounded-full"></div>
-                  </div>
-
-                  <p className="text-xs text-gray-400 mt-3">
-                    Detailed language percentages will be loaded from GitHub.
-                  </p>
-                </div>
+                ))
               ) : (
                 <p className="text-sm text-gray-500">
                   Language information unavailable.
                 </p>
               )}
+
             </div>
+
           </div>
 
-          {/* Recent Release */}
           <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+
             <p className="text-sm font-bold text-gray-900">RECENT RELEASE</p>
 
-            <div className="flex items-center gap-2 mt-4">
-              <p className="text-base font-semibold">Release data</p>
-            </div>
+            {releases.length > 0 ? (
+              <div className="mt-4">
 
-            <p className="text-sm text-gray-500 mt-2">
-              Release information will be connected to the GitHub releases API.
-            </p>
+                <p className="text-base font-semibold text-gray-900">
+                  {releases[0].name}
+                </p>
 
-            <a href={`${githubUrl}/releases`} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-sm text-indigo-600 font-semibold mt-5 hover:text-indigo-800 transition">
-              View releases
-              <ArrowUpRight size={14}/>
-            </a>
+                <p className="text-xs text-gray-400 mt-1">
+                  {releases[0].tag}
+                </p>
+
+                <p className="text-sm text-gray-500 mt-3">
+                  Published {formatDate(releases[0].publishedAt)}
+                </p>
+
+                {releases[0].prerelease && (
+                  <span className="inline-flex px-2 py-1 mt-3 rounded-full bg-orange-50 text-orange-600 text-[10px] font-semibold">
+                    Pre-release
+                  </span>
+                )}
+
+                <a href={releases[0].url} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-sm text-indigo-600 font-semibold mt-5 hover:text-indigo-800 transition">
+                  View release
+                  <ArrowUpRight size={14}/>
+                </a>
+
+              </div>
+            ) : (
+              <div className="mt-4">
+                <p className="text-sm text-gray-500">
+                  No published releases found.
+                </p>
+
+                <a href={`${githubUrl}/releases`} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-sm text-indigo-600 font-semibold mt-5 hover:text-indigo-800 transition">
+                  View releases
+                  <ArrowUpRight size={14}/>
+                </a>
+              </div>
+            )}
+
           </div>
 
         </aside>

@@ -1,106 +1,100 @@
-import React from 'react'
+import React, {useEffect, useState} from 'react'
 import RepositoryCard from './RepositoryCard'
 
-const RepositoryList = () => {
-  const repositories = [
-    {
-      name: 'vercel/next.js',
-      description: "The React Framework for the Web — used by some of the world's largest companies.",
-      language: 'TypeScript',
-      languageColor: 'bg-blue-500',
-      topics: ['react', 'nextjs', 'framework'],
-      stars: '113k',
-      forks: '23k',
-      updated: 'Updated 2 hours ago',
-      activity: 'Very active',
-      beginner: true,
-      verified: true,
-      icon: 'N',
-      iconBg: 'bg-gray-100',
-      iconColor: 'text-gray-900',
-      url: 'https://github.com/vercel/next.js'
-    },
-    {
-      name: 'facebook/react',
-      description: 'The library for web and native user interfaces.',
-      language: 'JavaScript',
-      languageColor: 'bg-yellow-400',
-      topics: ['react', 'javascript', 'ui'],
-      stars: '238k',
-      forks: '49k',
-      updated: 'Updated 1 hour ago',
-      activity: 'Very active',
-      beginner: true,
-      verified: true,
-      icon: '⚛',
-      iconBg: 'bg-blue-50',
-      iconColor: 'text-blue-500',
-      url: 'https://github.com/facebook/react'
-    },
-    {
-      name: 'nodejs/node',
-      description: "Node.js JavaScript runtime built on Chrome's V8 JavaScript engine.",
-      language: 'JavaScript',
-      languageColor: 'bg-yellow-400',
-      topics: ['nodejs', 'javascript', 'runtime'],
-      stars: '110k',
-      forks: '31k',
-      updated: 'Updated 3 hours ago',
-      activity: 'Very active',
-      beginner: false,
-      verified: true,
-      icon: '⬢',
-      iconBg: 'bg-green-50',
-      iconColor: 'text-green-600',
-      url: 'https://github.com/nodejs/node'
-    },
-    {
-      name: 'tailwindlabs/tailwindcss',
-      description: 'A utility-first CSS framework for rapidly building custom user interfaces.',
-      language: 'TypeScript',
-      languageColor: 'bg-blue-500',
-      topics: ['css', 'tailwind', 'frontend'],
-      stars: '87k',
-      forks: '4.3k',
-      updated: 'Updated 5 hours ago',
-      activity: 'Very active',
-      beginner: true,
-      verified: true,
-      icon: '≋',
-      iconBg: 'bg-cyan-50',
-      iconColor: 'text-cyan-500',
-      url: 'https://github.com/tailwindlabs/tailwindcss'
-    },
-    {
-      name: 'vuejs/core',
-      description: 'Vue.js is a progressive JavaScript framework for building user interfaces.',
-      language: 'TypeScript',
-      languageColor: 'bg-blue-500',
-      topics: ['vue', 'javascript', 'frontend'],
-      stars: '49k',
-      forks: '8.2k',
-      updated: 'Updated 4 hours ago',
-      activity: 'Very active',
-      beginner: true,
-      verified: true,
-      icon: 'V',
-      iconBg: 'bg-green-50',
-      iconColor: 'text-green-500',
-      url: 'https://github.com/vuejs/core'
+const RepositoryList = ({search, filters, page, setTotalPages}) => {
+  const [repositories, setRepositories] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    const fetchRepositories = async () => {
+      setLoading(true)
+      setError('')
+
+      try {
+        const params = new URLSearchParams({
+          q: search || 'open source',
+          page,
+          per_page: 10
+        })
+
+        if (filters.language) {
+          params.append('language', filters.language)
+        }
+
+        const response = await fetch(`http://localhost:5000/api/repositories/search?${params}`)
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch repositories')
+        }
+
+        const data = await response.json()
+
+        setRepositories(data.repositories)
+
+        const pages = Math.min(Math.ceil(data.total / data.perPage), 100)
+        setTotalPages(pages)
+      } catch (error) {
+        console.error(error)
+        setRepositories([])
+        setTotalPages(1)
+        setError('Unable to load repositories. Make sure the SideQuest server is running.')
+      } finally {
+        setLoading(false)
+      }
     }
-  ]
+
+    fetchRepositories()
+  }, [search, filters.language, page, setTotalPages])
+
+  if (loading) {
+    return (
+      <div className="flex flex-col flex-1 gap-3 min-w-0">
+
+        <div className="px-1">
+          <p className="text-sm text-gray-500">Finding repositories...</p>
+        </div>
+
+        {[1, 2, 3].map((item) => (
+          <div key={item} className="h-48 bg-white border border-gray-200 rounded-xl animate-pulse" />
+        ))}
+
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center flex-1 min-h-64 p-8 bg-white border border-red-200 rounded-xl">
+        <p className="text-sm font-semibold text-red-600">{error}</p>
+        <p className="mt-2 text-xs text-gray-500">Start the backend with <span className="font-semibold">node server.js</span>.</p>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col flex-1 gap-3 min-w-0">
 
       <div className="flex items-center justify-between px-1">
-        <p className="text-sm text-gray-600"><span className="font-semibold text-gray-900">{repositories.length}</span> repositories found</p>
-        <p className="text-xs text-gray-400">Showing popular repositories</p>
+        <p className="text-sm text-gray-600">
+          <span className="font-semibold text-gray-900">{repositories.length}</span> repositories found
+        </p>
+
+        <p className="text-xs text-gray-400">
+          Showing GitHub results
+        </p>
       </div>
 
-      {repositories.map((repo) => (
-        <RepositoryCard key={repo.name} repo={repo} />
-      ))}
+      {repositories.length === 0 ? (
+        <div className="flex flex-col items-center justify-center min-h-64 p-8 bg-white border border-gray-200 rounded-xl">
+          <p className="text-sm font-semibold text-gray-800">No repositories found</p>
+          <p className="mt-1 text-xs text-gray-500">Try another search or remove some filters.</p>
+        </div>
+      ) : (
+        repositories.map((repo) => (
+          <RepositoryCard key={repo.id} repo={repo} />
+        ))
+      )}
 
     </div>
   )

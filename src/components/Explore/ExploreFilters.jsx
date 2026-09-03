@@ -1,19 +1,7 @@
 import React, {useState} from 'react'
 import {ChevronDown, Info, SlidersHorizontal, X} from 'lucide-react'
 
-const ExploreFilters = () => {
-  const [filters, setFilters] = useState({
-    language: '',
-    topics: '',
-    stars: '',
-    license: '',
-    activity: ''
-  })
-
-
-  
-  const [beginner, setBeginner] = useState(false)
-
+const ExploreFilters = ({filters, setFilters}) => {
   const [openFilter, setOpenFilter] = useState(null)
 
   const filterOptions = {
@@ -33,10 +21,10 @@ const ExploreFilters = () => {
   }
 
   const selectFilter = (filter, value) => {
-    setFilters(prev => ({
-      ...prev,
+    setFilters({
+      ...filters,
       [filter]: value
-    }))
+    })
     setOpenFilter(null)
   }
 
@@ -46,12 +34,12 @@ const ExploreFilters = () => {
       topics: '',
       stars: '',
       license: '',
-      activity: ''
+      activity: '',
+      beginner: false
     })
-    setBeginner(false)
   }
 
-  const activeFilters = Object.values(filters).filter(Boolean).length + (beginner ? 1 : 0)
+  const activeFilters = Object.values(filters).filter(Boolean).length
 
   return (
     <div className="mt-6">
@@ -122,8 +110,8 @@ const ExploreFilters = () => {
 
           <input
             type="checkbox"
-            checked={beginner}
-            onChange={(e) => setBeginner(e.target.checked)}
+            checked={filters.beginner}
+            onChange={(e) => setFilters({...filters, beginner: e.target.checked})}
             className="w-4 h-4 accent-indigo-600"
           />
 

@@ -1,10 +1,24 @@
-import React, {useState} from 'react'
+import React from 'react'
 import {ChevronLeft, ChevronRight} from 'lucide-react'
 
-const Pagination = () => {
-  const [currentPage, setCurrentPage] = useState(1)
+const Pagination = ({currentPage, totalPages, setCurrentPage}) => {
+  const getPages = () => {
+    if (totalPages <= 5) {
+      return Array.from({length: totalPages}, (_, index) => index + 1)
+    }
 
-  const pages = [1, 2, 3, 4]
+    if (currentPage <= 3) {
+      return [1, 2, 3, 4, '...', totalPages]
+    }
+
+    if (currentPage >= totalPages - 2) {
+      return [1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages]
+    }
+
+    return [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages]
+  }
+
+  const pages = getPages()
 
   return (
     <div className="flex items-center justify-center gap-2 py-8">
@@ -17,38 +31,29 @@ const Pagination = () => {
         <ChevronLeft className="size-4" />
       </button>
 
-      {pages.map((page) => (
-        <button
-          key={page}
-          onClick={() => setCurrentPage(page)}
-          className={`w-10 h-10 rounded-lg border text-sm font-medium transition ${
-            currentPage === page
-              ? 'bg-indigo-600 text-white border-indigo-600'
-              : 'bg-white text-gray-700 border-gray-300 hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-600'
-          }`}
-        >
-          {page}
-        </button>
+      {pages.map((page, index) => (
+        page === '...' ? (
+          <span key={`dots-${index}`} className="flex items-center justify-center w-10 h-10 text-sm text-gray-400">
+            ...
+          </span>
+        ) : (
+          <button
+            key={page}
+            onClick={() => setCurrentPage(page)}
+            className={`w-10 h-10 rounded-lg border text-sm font-medium transition ${
+              currentPage === page
+                ? 'bg-indigo-600 text-white border-indigo-600'
+                : 'bg-white text-gray-700 border-gray-300 hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-600'
+            }`}
+          >
+            {page}
+          </button>
+        )
       ))}
 
-      <span className="flex items-center justify-center w-10 h-10 text-sm text-gray-400">
-        ...
-      </span>
-
       <button
-        onClick={() => setCurrentPage(62)}
-        className={`w-10 h-10 rounded-lg border text-sm font-medium transition ${
-          currentPage === 62
-            ? 'bg-indigo-600 text-white border-indigo-600'
-            : 'bg-white text-gray-700 border-gray-300 hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-600'
-        }`}
-      >
-        62
-      </button>
-
-      <button
-        onClick={() => setCurrentPage(prev => Math.min(prev + 1, 62))}
-        disabled={currentPage === 62}
+        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+        disabled={currentPage === totalPages}
         className="flex items-center gap-2 h-10 px-4 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-indigo-50 hover:text-indigo-600 disabled:opacity-40 transition"
       >
         Next
