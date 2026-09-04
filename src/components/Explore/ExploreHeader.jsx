@@ -63,11 +63,10 @@ const ExploreHeader = ({search, setSearch, onSearch}) => {
 
           <div className="flex flex-wrap gap-2">
 
-            <button onClick={() => {setSearch('react'); onSearch()}} className="px-3 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 rounded-full hover:bg-indigo-100 transition">#react</button>
-            <button onClick={() => {setSearch('python'); onSearch()}} className="px-3 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 rounded-full hover:bg-indigo-100 transition">#python</button>
-            <button onClick={() => {setSearch('web'); onSearch()}} className="px-3 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 rounded-full hover:bg-indigo-100 transition">#web</button>
-            <button onClick={() => {setSearch('machine-learning'); onSearch()}} className="px-3 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 rounded-full hover:bg-indigo-100 transition">#machine-learning</button>
-
+            <button onClick={() => onSearch('react')} className="px-3 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 rounded-full hover:bg-indigo-100 transition">#react</button>
+            <button onClick={() => onSearch('python')} className="px-3 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 rounded-full hover:bg-indigo-100 transition">#python</button>
+            <button onClick={() => onSearch('web')} className="px-3 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 rounded-full hover:bg-indigo-100 transition">#web</button>
+            <button onClick={() => onSearch('machine-learning')} className="px-3 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 rounded-full hover:bg-indigo-100 transition">#machine-learning</button>
           </div>
 
         </div>

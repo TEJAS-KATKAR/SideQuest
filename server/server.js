@@ -24,55 +24,236 @@ app.get('/api/test', (req, res) => {
 app.get('/api/repositories/search', async (req, res) => {
   const {
     q = 'open source',
-    language,
-    sort = 'stars',
-    order = 'desc',
+    language = [],
+    topic = [],
+    stars = '',
+    forks = '',
+    watchers = '',
+    license = '',
+    activity = '',
+    sortMetric = '',
+    sortOrder = '',
     page = 1,
     per_page = 10
   } = req.query
 
   try {
-    const searchParts = [q]
+    const languages = Array.isArray(language) ? language : [language]
+    const topics = Array.isArray(topic) ? topic : [topic]
 
-    if (language && language !== 'All') {
-      searchParts.push(`language:${language}`)
+    const selectedLanguages = languages.filter(Boolean)
+    const selectedTopics = topics.filter(Boolean)
+
+    const searchParts = []
+
+    if (q && q.trim()) {
+      searchParts.push(q.trim())
     }
 
-    const githubQuery = encodeURIComponent(searchParts.join(' '))
+    selectedTopics.forEach(value => {
+      searchParts.push(
+        `topic:${value.toLowerCase().replace(/\s+/g, '-')}`
+      )
+    })
 
-    const response = await fetch(
-      `https://api.github.com/search/repositories?q=${githubQuery}&sort=${sort}&order=${order}&page=${page}&per_page=${per_page}`,
-      {
-        headers: githubHeaders
+    if (stars) {
+      searchParts.push(`stars:>=${stars}`)
+    }
+
+    if (forks) {
+      searchParts.push(`forks:>=${forks}`)
+    }
+
+    if (license) {
+      searchParts.push(`license:${license}`)
+    }
+
+    if (activity === 'Archived') {
+      searchParts.push('archived:true')
+    }
+
+    if (activity === 'Recently updated') {
+      searchParts.push('pushed:>2026-08-01')
+    }
+
+    if (activity === 'Active') {
+      searchParts.push('pushed:>2026-06-01')
+    }
+
+    if (activity === 'Very active') {
+      searchParts.push('pushed:>2026-07-01')
+    }
+
+    if (activity === 'No recent activity') {
+      searchParts.push('pushed:<2026-06-01')
+    }
+
+    let githubSort = 'stars'
+    let githubOrder = 'desc'
+
+    if (sortMetric === 'stars') {
+      githubSort = 'stars'
+      githubOrder = sortOrder || 'desc'
+    }
+
+    if (sortMetric === 'forks') {
+      githubSort = 'forks'
+      githubOrder = sortOrder || 'desc'
+    }
+
+    if (sortMetric === 'updated') {
+      githubSort = 'updated'
+      githubOrder = sortOrder || 'desc'
+    }
+
+    const fetchRepositories = async (languageValue = '') => {
+      const queryParts = [...searchParts]
+
+      if (languageValue) {
+        queryParts.push(`language:${languageValue}`)
       }
-    )
 
-    if (!response.ok) {
-      const errorData = await response.json()
+      const githubQuery = encodeURIComponent(
+        queryParts.join(' ') || 'open source'
+      )
 
-      return res.status(response.status).json({
-        error: errorData.message || 'GitHub search failed'
+      const githubUrl =
+        `https://api.github.com/search/repositories?q=${githubQuery}` +
+        `&sort=${githubSort}` +
+        `&order=${githubOrder}` +
+        `&page=1` +
+        `&per_page=100`
+
+      console.log('GitHub search:', decodeURIComponent(githubQuery))
+
+      const response = await fetch(githubUrl, {
+        headers: githubHeaders
       })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+
+        throw new Error(
+          errorData.message || `GitHub search failed (${response.status})`
+        )
+      }
+
+      return response.json()
     }
 
-    const data = await response.json()
+    let data
 
-    const repositories = data.items.map((repo) => ({
+    /*
+      No language selected:
+      One normal GitHub search.
+    */
+
+    if (selectedLanguages.length === 0) {
+      data = await fetchRepositories()
+    }
+
+    /*
+      Multiple languages selected:
+      Search each language separately and combine the results.
+
+      Example:
+
+      JavaScript
+      Python
+
+      becomes:
+
+      GitHub search → JavaScript
+      GitHub search → Python
+
+      Then SideQuest combines them.
+    */
+
+    if (selectedLanguages.length > 0) {
+      const results = []
+
+      for (const languageValue of selectedLanguages) {
+        const result = await fetchRepositories(languageValue)
+        results.push(result)
+      }
+
+      const repositoryMap = new Map()
+
+      results.forEach(result => {
+        result.items.forEach(repo => {
+          repositoryMap.set(repo.id, repo)
+        })
+      })
+
+      let combinedRepositories = Array.from(
+        repositoryMap.values()
+      )
+
+      /*
+        Apply SideQuest sorting after combining
+        the language results.
+      */
+
+      combinedRepositories.sort((a, b) => {
+        if (githubSort === 'forks') {
+          return githubOrder === 'asc'
+            ? a.forks_count - b.forks_count
+            : b.forks_count - a.forks_count
+        }
+
+        if (githubSort === 'updated') {
+          return githubOrder === 'asc'
+            ? new Date(a.updated_at) - new Date(b.updated_at)
+            : new Date(b.updated_at) - new Date(a.updated_at)
+        }
+
+        return githubOrder === 'asc'
+          ? a.stargazers_count - b.stargazers_count
+          : b.stargazers_count - a.stargazers_count
+      })
+
+      const start =
+        (Number(page) - 1) * Number(per_page)
+
+      const end =
+        start + Number(per_page)
+
+      data = {
+        total_count: combinedRepositories.length,
+        items: combinedRepositories.slice(start, end)
+      }
+    }
+
+    const repositories = data.items.map(repo => ({
       id: repo.id,
       name: repo.full_name,
       description: repo.description || 'No description available.',
       language: repo.language || 'Unknown',
       languageColor: 'bg-indigo-500',
       topics: repo.topics || [],
-      stars: repo.stargazers_count,
-      forks: repo.forks_count,
+
+      stars: repo.stargazers_count || 0,
+      forks: repo.forks_count || 0,
+
+      // Actual GitHub watchers.
+      watchers: repo.subscribers_count || 0,
+
       updated: repo.updated_at,
-      activity: repo.archived ? 'Archived' : 'Active',
+
+      activity: repo.archived
+        ? 'Archived'
+        : 'Active',
+
       beginner: false,
       verified: false,
-      icon: repo.name.charAt(0).toUpperCase(),
+
+      icon: repo.name
+        ? repo.name.charAt(0).toUpperCase()
+        : '?',
+
       iconBg: 'bg-gray-100',
       iconColor: 'text-gray-900',
+
       url: repo.html_url,
       owner: repo.owner.login,
       repo: repo.name,
@@ -85,11 +266,12 @@ app.get('/api/repositories/search', async (req, res) => {
       perPage: Number(per_page),
       repositories
     })
+
   } catch (error) {
     console.error('GitHub search error:', error)
 
     res.status(500).json({
-      error: 'Unable to connect to GitHub'
+      error: error.message || 'Unable to connect to GitHub'
     })
   }
 })
@@ -162,17 +344,23 @@ app.get('/api/repositories/:owner/:repo/languages', async (req, res) => {
 
     const data = await response.json()
 
-    const total = Object.values(data).reduce((sum, value) => sum + value, 0)
+    const total = Object.values(data).reduce(
+      (sum, value) => sum + value,
+      0
+    )
 
     const languages = Object.entries(data)
       .map(([name, bytes]) => ({
         name,
         bytes,
-        percentage: total ? Math.round((bytes / total) * 100) : 0
+        percentage: total
+          ? Math.round((bytes / total) * 100)
+          : 0
       }))
       .sort((a, b) => b.bytes - a.bytes)
 
     res.json(languages)
+
   } catch (error) {
     console.error(error)
 
@@ -201,7 +389,7 @@ app.get('/api/repositories/:owner/:repo/releases', async (req, res) => {
 
     const data = await response.json()
 
-    const releases = data.map((release) => ({
+    const releases = data.map(release => ({
       name: release.name || release.tag_name,
       tag: release.tag_name,
       publishedAt: release.published_at,
@@ -210,6 +398,7 @@ app.get('/api/repositories/:owner/:repo/releases', async (req, res) => {
     }))
 
     res.json(releases)
+
   } catch (error) {
     console.error(error)
 
@@ -238,7 +427,7 @@ app.get('/api/repositories/:owner/:repo/commits', async (req, res) => {
 
     const data = await response.json()
 
-    const commits = data.map((commit) => ({
+    const commits = data.map(commit => ({
       sha: commit.sha,
       message: commit.commit.message.split('\n')[0],
       author: commit.commit.author?.name || 'Unknown',
@@ -247,6 +436,7 @@ app.get('/api/repositories/:owner/:repo/commits', async (req, res) => {
     }))
 
     res.json(commits)
+
   } catch (error) {
     console.error(error)
 
@@ -277,13 +467,14 @@ app.get('/api/repositories/:owner/:repo/contributors', async (req, res) => {
 
     res.json({
       count: data.length,
-      contributors: data.map((contributor) => ({
+      contributors: data.map(contributor => ({
         login: contributor.login,
         contributions: contributor.contributions,
         avatar: contributor.avatar_url,
         url: contributor.html_url
       }))
     })
+
   } catch (error) {
     console.error(error)
 
