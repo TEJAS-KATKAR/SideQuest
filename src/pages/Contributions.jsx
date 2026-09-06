@@ -1,46 +1,81 @@
-import React, {useState} from 'react'
+import React, {useEffect, useState} from 'react'
 import ContributionHeader from '../components/Contributions/ContributionHeader'
-import ContributionFilters from '../components/Contributions/ContributionFilters'
 import IssueList from '../components/Contributions/IssueList'
 import ContributionSidebar from '../components/Contributions/ContributionSidebar'
 
-const Contributions = () => {
-  const [search, setSearch] = useState('')
+const defaultFilters = {
+  language: [],
+  technology: [],
+  difficulty: 'All',
+  labels: [],
+  type: [],
+  activity: 'All',
+  assignment: 'All',
+  issueAge: 'All',
+  discussion: 'All',
+  beginner: false
+}
 
-  const [filters, setFilters] = useState({
-    language: 'All',
-    difficulty: 'All',
-    labels: 'All',
-    type: 'All',
-    activity: 'All',
-    beginner: true
+const Contributions = () => {
+  const [search, setSearch] = useState(() => {
+    return sessionStorage.getItem('sidequest-contribution-search') || ''
   })
+
+  const [filters, setFilters] = useState(() => {
+    try {
+      const savedFilters = sessionStorage.getItem('sidequest-contribution-filters')
+
+      if (!savedFilters) {
+        return defaultFilters
+      }
+
+      return {
+        ...defaultFilters,
+        ...JSON.parse(savedFilters)
+      }
+    } catch {
+      return defaultFilters
+    }
+  })
+
+  useEffect(() => {
+    sessionStorage.setItem(
+      'sidequest-contribution-filters',
+      JSON.stringify(filters)
+    )
+  }, [filters])
+
+  useEffect(() => {
+    sessionStorage.setItem(
+      'sidequest-contribution-search',
+      search
+    )
+  }, [search])
 
   return (
     <div className="px-8 py-6">
-
       <div className="flex items-start gap-6">
 
         <div className="flex-1 min-w-0">
-          <ContributionHeader search={search} setSearch={setSearch}/>
-
-          {/* ONLY MOBILE */}
-          <div className="flex lg:hidden mt-4">
-            <ContributionFilters filters={filters} setFilters={setFilters}/>
-          </div>
+          <ContributionHeader
+            search={search}
+            setSearch={setSearch}
+          />
 
           <div className="mt-5">
-            <IssueList filters={filters} search={search}/>
+            <IssueList
+              filters={filters}
+              search={search}
+            />
           </div>
         </div>
 
-        {/* ONLY DESKTOP */}
-        <div className="hidden lg:block">
-          <ContributionSidebar filters={filters} setFilters={setFilters}/>
-        </div>
+        <ContributionSidebar
+          filters={filters}
+          setFilters={setFilters}
+        />
 
       </div>
-
     </div>
   )
 }

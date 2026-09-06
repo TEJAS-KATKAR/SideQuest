@@ -1,5 +1,5 @@
 import React, {useState} from 'react'
-import {Check, CircleQuestionMark, Search, ArrowUpRight} from 'lucide-react'
+import {Check, CircleQuestionMark, Search, ArrowUpRight, HeartHandshake} from 'lucide-react'
 import {useNavigate} from 'react-router-dom'
 import learningperson from '../../assets/learningperson.png'
 
@@ -17,8 +17,8 @@ const ContributionHeader = ({search, setSearch}) => {
 
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-4">
-            <div className="w-13 h-13 rounded-xl bg-indigo-100 flex items-center justify-center">
-              <Check size={28} className="text-indigo-700"/>
+            <div className="w-14 h-14 rounded-xl bg-indigo-100 flex items-center justify-center">
+              <HeartHandshake size={28} className="text-indigo-700"/>
             </div>
 
             <div>

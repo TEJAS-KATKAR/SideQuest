@@ -1,6 +1,36 @@
 import React, {useEffect, useState} from 'react'
 import RepositoryCard from './RepositoryCard'
 
+const formatTotalRepositories = number => {
+  const value = Number(number) || 0
+
+  if (value < 100) {
+    return value.toString()
+  }
+
+  if (value < 500) {
+    return '100+'
+  }
+
+  if (value < 1000) {
+    return '500+'
+  }
+
+  if (value < 10000) {
+    return '1,000+'
+  }
+
+  if (value < 100000) {
+    return '10,000+'
+  }
+
+  if (value < 1000000) {
+    return '100,000+'
+  }
+
+  return '1,000,000+'
+}
+
 const RepositoryList = ({
   search,
   filters,
@@ -10,6 +40,7 @@ const RepositoryList = ({
   setTotalPages
 }) => {
   const [repositories, setRepositories] = useState([])
+  const [totalRepositories, setTotalRepositories] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -23,7 +54,11 @@ const RepositoryList = ({
       try {
         const params = new URLSearchParams()
 
-        params.set('q', search || 'open source')
+        params.set(
+          'q',
+          search || 'open source'
+        )
+
         params.set('page', page)
         params.set('per_page', 10)
 
@@ -72,45 +107,69 @@ const RepositoryList = ({
         )
 
         if (!response.ok) {
-          const data = await response.json().catch(() => null)
+          const data =
+            await response.json().catch(() => null)
 
           throw new Error(
-            data?.error || 'Failed to fetch repositories'
+            data?.error ||
+            'Failed to fetch repositories'
           )
         }
 
         const data = await response.json()
 
-        setRepositories(data.repositories || [])
+        setRepositories(
+          data.repositories || []
+        )
+
+        setTotalRepositories(
+          Number(data.total) || 0
+        )
 
         const pages = Math.min(
-          Math.ceil(data.total / data.perPage),
+          Math.ceil(
+            (Number(data.total) || 0) /
+            (Number(data.perPage) || 10)
+          ),
           100
         )
 
-        setTotalPages(pages || 1)
+        setTotalPages(
+          pages || 1
+        )
 
       } catch (error) {
         if (error.name === 'AbortError') {
           return
         }
 
-        console.error('Repository fetch error:', error)
+        console.error(
+          'Repository fetch error:',
+          error
+        )
 
         setRepositories([])
+        setTotalRepositories(0)
         setTotalPages(1)
-        setError(error.message || 'Unable to load repositories.')
+
+        setError(
+          error.message ||
+          'Unable to load repositories.'
+        )
+
       } finally {
         if (!controller.signal.aborted) {
           setLoading(false)
         }
       }
+
     }, 350)
 
     return () => {
       clearTimeout(timer)
       controller.abort()
     }
+
   }, [
     search,
     filters.language,
@@ -132,10 +191,12 @@ const RepositoryList = ({
       <div className="flex flex-col flex-1 gap-3 min-w-0">
 
         <div className="px-1">
-          <p className="text-sm text-gray-500">Finding repositories...</p>
+          <p className="text-sm text-gray-500">
+            Finding repositories...
+          </p>
         </div>
 
-        {[1, 2, 3].map((item) => (
+        {[1, 2, 3].map(item => (
           <div
             key={item}
             className="h-48 bg-white border border-gray-200 rounded-xl animate-pulse"
@@ -169,7 +230,9 @@ const RepositoryList = ({
 
         <p className="text-sm text-gray-600">
           <span className="font-semibold text-gray-900">
-            {repositories.length}
+            {formatTotalRepositories(
+              totalRepositories
+            )}
           </span>{' '}
           repositories found
         </p>
@@ -193,7 +256,7 @@ const RepositoryList = ({
 
         </div>
       ) : (
-        repositories.map((repo) => (
+        repositories.map(repo => (
           <RepositoryCard
             key={repo.id}
             repo={repo}

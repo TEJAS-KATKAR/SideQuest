@@ -4,13 +4,17 @@ import Sidebar from '../SideBar/Sidebar'
 import TopBar from '../TopBar/TopBar'
 
 const MainLayout = () => {
+  const [sidebarOpen, setSidebarOpen] = React.useState(true)
+
   return (
     <div className="min-h-screen bg-[#f6f8ff]">
       
-      <Sidebar />
+      <Sidebar sidebarOpen={sidebarOpen} />
 
-      <div className="ml-50 min-h-screen min-w-0">
-        <TopBar />
+      <div className={`min-h-screen min-w-0 transition-all duration-300 ease-in-out ${
+        sidebarOpen ? 'ml-50' : 'ml-0'
+      }`}>
+        <TopBar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
         <main>
           <Outlet />

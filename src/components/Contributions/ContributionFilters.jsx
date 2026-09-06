@@ -1,51 +1,64 @@
 import React from 'react'
-import {ChevronDown, Filter, Info} from 'lucide-react'
+import {Check, Filter, Search} from 'lucide-react'
 
 const ContributionFilters = ({filters, setFilters}) => {
 
-  const toggleFilter = (name) => {
-    setFilters({...filters, [name]: filters[name] === 'All' ? 'Selected' : 'All'})
+  const toggleBeginner = () => {
+    setFilters({
+      ...filters,
+      beginner: !filters.beginner
+    })
+  }
+
+  const resetFilters = () => {
+    setFilters({
+      language: [],
+      technology: [],
+      difficulty: 'All',
+      labels: [],
+      type: [],
+      activity: 'All',
+      assignment: 'All',
+      issueAge: 'All',
+      discussion: 'All',
+      beginner: false
+    })
   }
 
   return (
-    <div className="flex items-center gap-3 w-full px-3 py-3 bg-white border border-gray-200 rounded-lg overflow-x-auto">
+    <div className="flex items-center w-full gap-3 px-3 py-3 overflow-x-auto bg-white border border-gray-200 rounded-lg">
 
-      <button onClick={() => toggleFilter('language')} className={`flex items-center gap-2 px-3 py-2 border rounded-md text-xs font-medium whitespace-nowrap transition ${filters.language !== 'All' ? 'border-indigo-400 bg-indigo-50 text-indigo-600' : 'border-gray-200 text-gray-700 hover:border-gray-300 hover:bg-gray-50'}`}>
-        Language
-        <ChevronDown size={14}/>
+      <button className="flex items-center gap-2 px-3 py-2.5 text-sm font-medium text-gray-700 whitespace-nowrap rounded-md hover:bg-blue-50 hover:text-blue-700 transition">
+        <Filter size={15}/>
+        Filters
       </button>
 
-      <button onClick={() => toggleFilter('difficulty')} className={`flex items-center gap-2 px-3 py-2 border rounded-md text-xs font-medium whitespace-nowrap transition ${filters.difficulty !== 'All' ? 'border-indigo-400 bg-indigo-50 text-indigo-600' : 'border-gray-200 text-gray-700 hover:border-gray-300 hover:bg-gray-50'}`}>
-        Difficulty
-        <ChevronDown size={14}/>
-      </button>
-
-      <button onClick={() => toggleFilter('labels')} className={`flex items-center gap-2 px-3 py-2 border rounded-md text-xs font-medium whitespace-nowrap transition ${filters.labels !== 'All' ? 'border-indigo-400 bg-indigo-50 text-indigo-600' : 'border-gray-200 text-gray-700 hover:border-gray-300'}`}>
-        Labels
-        <ChevronDown size={14}/>
-      </button>
-
-      <button onClick={() => toggleFilter('type')} className={`flex items-center gap-2 px-3 py-2 border rounded-md text-xs font-medium whitespace-nowrap transition ${filters.type !== 'All' ? 'border-indigo-400 bg-indigo-50 text-indigo-600' : 'border-gray-200 text-gray-700 hover:border-gray-300'}`}>
-        Issue type
-        <ChevronDown size={14}/>
-      </button>
-
-      <button onClick={() => toggleFilter('activity')} className={`flex items-center gap-2 px-3 py-2 border rounded-md text-xs font-medium whitespace-nowrap transition ${filters.activity !== 'All' ? 'border-indigo-400 bg-indigo-50 text-indigo-600' : 'border-gray-200 text-gray-700 hover:border-gray-300'}`}>
-        Repository activity
-        <ChevronDown size={14}/>
-      </button>
-
-      <button onClick={() => setFilters({...filters, beginner: !filters.beginner})} className={`flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium whitespace-nowrap transition ${filters.beginner ? 'bg-indigo-50 text-indigo-600' : 'text-gray-600 hover:bg-gray-50'}`}>
-        <span className={`w-4 h-4 rounded flex items-center justify-center border ${filters.beginner ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-gray-300'}`}>
-          {filters.beginner && '✓'}
+      <button
+        onClick={toggleBeginner}
+        className={`flex items-center gap-2 px-3 py-2.5 text-sm font-medium whitespace-nowrap rounded-md transition ${
+          filters.beginner
+            ? 'bg-blue-50 text-blue-700'
+            : 'text-gray-600 hover:bg-blue-50 hover:text-blue-700'
+        }`}
+      >
+        <span className={`flex items-center justify-center size-4 rounded border ${
+          filters.beginner
+            ? 'bg-blue-500 border-blue-500 text-white'
+            : 'border-gray-300'
+        }`}>
+          {filters.beginner && <Check size={11}/>}
         </span>
+
         Good first issue
-        <Info size={13} className="text-gray-400"/>
       </button>
 
-      <button onClick={() => setFilters({language: 'All', difficulty: 'All', labels: 'All', type: 'All', activity: 'All', beginner: true})} className="flex items-center gap-1 px-2 text-xs text-indigo-600 font-medium whitespace-nowrap hover:text-indigo-800 transition">
-        <Filter size={13}/>
-        Reset
+      <button
+        onClick={resetFilters}
+        title="Reset filters"
+        aria-label="Reset filters"
+        className="flex items-center justify-center size-9 shrink-0 text-gray-500 rounded-md hover:text-blue-600 hover:bg-blue-50 transition"
+      >
+        <Search size={15} className="rotate-45"/>
       </button>
 
     </div>

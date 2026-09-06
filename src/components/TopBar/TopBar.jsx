@@ -5,11 +5,28 @@ import Profile from './profile'
 
 const TopBar = () => {
     const [profileOpen, setProfileOpen] = useState(false)
+    const [sidebarOpen, setSidebarOpen] = useState(true)
+
+  const toggleSidebar = () => {
+    setSidebarOpen(prev => !prev)
+    window.dispatchEvent(new Event('toggleSidebar'))
+  }
 
   return (
     <div className='w-full h-14 flex justify-between items-center px-10 shadow-sm bg-white'>
         <div className='justify-center items-center'>
-            <Menu />
+            <button
+              onClick={toggleSidebar}
+              aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+              title={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+              className='group flex justify-center items-center p-2 rounded-lg cursor-pointer transition-all duration-200 hover:bg-gray-100 hover:scale-105 active:scale-90 active:bg-gray-200'
+            >
+              <Menu
+                className={`transition-transform duration-300 ease-in-out ${
+                  sidebarOpen ? 'rotate-0' : 'rotate-180'
+                }`}
+              />
+            </button>
         </div>
         <div className="flex justify-center items-center gap-5">
             <Sun />
@@ -40,7 +57,7 @@ const TopBar = () => {
           </button>
 
         </div>
-      
+
 
       {profileOpen && (
         <Profile onClose={() => setProfileOpen(false)} />

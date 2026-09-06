@@ -1,7 +1,8 @@
-import React, {useState} from 'react'
+import React, {useEffect, useRef, useState} from 'react'
 import {
   ChevronDown,
   Info,
+  Search,
   SlidersHorizontal,
   X
 } from 'lucide-react'
@@ -14,6 +15,23 @@ const ExploreFilters = ({
   setMetricSort
 }) => {
   const [openFilter, setOpenFilter] = useState(null)
+  const filterRef = useRef(null)
+  const [languageSearch, setLanguageSearch] = useState('')
+  const [technologySearch, setTechnologySearch] = useState('')
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (filterRef.current && !filterRef.current.contains(event.target)) {
+        setOpenFilter(null)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
 
   const multiSelectOptions = {
     language: [
@@ -21,8 +39,8 @@ const ExploreFilters = ({
       'TypeScript',
       'Python',
       'Java',
-      'C++',
       'C',
+      'C++',
       'C#',
       'Go',
       'Rust',
@@ -31,56 +49,96 @@ const ExploreFilters = ({
       'Swift',
       'Kotlin',
       'Dart',
+      'R',
+      'Scala',
       'HTML',
       'CSS',
-      'Shell'
+      'SQL',
+      'Shell',
+      'Lua',
+      'Perl',
+      'Haskell',
+      'Elixir',
+      'Clojure',
+      'Objective-C',
+      'MATLAB',
+      'Assembly'
     ],
-
     topics: [
       'React',
       'Next.js',
       'Vue',
       'Angular',
       'Node.js',
+      'Express',
+      'React Native',
       'Frontend',
       'Backend',
       'Web Development',
-      'AI',
-      'Machine Learning',
-      'LLM',
-      'Open Source',
-      'DevTools',
-      'CLI',
-      'API',
+      'Tailwind CSS',
+      'Bootstrap',
+      'Svelte',
+      'Astro',
+      'MongoDB',
+      'PostgreSQL',
+      'MySQL',
+      'SQLite',
+      'Redis',
+      'Firebase',
+      'Supabase',
+      'GraphQL',
+      'REST API',
       'Database',
+      'AI',
+      'Artificial Intelligence',
+      'Machine Learning',
+      'Deep Learning',
+      'LLM',
+      'NLP',
+      'Computer Vision',
+      'Data Science',
+      'Data Analytics',
+      'TensorFlow',
+      'PyTorch',
+      'Pandas',
+      'Power BI',
+      'Tableau',
       'Docker',
+      'Kubernetes',
+      'AWS',
+      'Azure',
+      'Google Cloud',
+      'Terraform',
+      'CI/CD',
       'DevOps',
       'Cybersecurity',
-      'Mobile',
       'Game Development',
-      'Tailwind CSS',
+      'Blockchain',
+      'DevTools',
+      'CLI',
       'Testing',
-      'Education'
+      'Education',
+      'Open Source',
+      'Mobile'
     ]
   }
 
   const singleSelectOptions = {
     license: [
-      'Any',
-      'MIT',
-      'Apache-2.0',
-      'GPL-3.0',
-      'BSD-3-Clause',
-      'MPL-2.0'
+      ['Any', ''],
+      ['MIT', 'MIT'],
+      ['Apache-2.0', 'Apache-2.0'],
+      ['GPL-3.0', 'GPL-3.0'],
+      ['BSD-3-Clause', 'BSD-3-Clause'],
+      ['MPL-2.0', 'MPL-2.0']
     ],
-
     activity: [
-      'Any',
-      'Recently updated',
-      'Active',
-      'Very active',
-      'No recent activity',
-      'Archived'
+      ['Any', ''],
+      ['Recently updated', 'Recently updated'],
+      ['Active', 'Active'],
+      ['Very active', 'Very active'],
+      ['No recent activity', 'No recent activity'],
+      ['Archived', 'Archived']
     ]
   }
 
@@ -94,7 +152,6 @@ const ExploreFilters = ({
       ['50k+', '50000'],
       ['100k+', '100000']
     ],
-
     forks: [
       ['Any', ''],
       ['10+', '10'],
@@ -102,7 +159,6 @@ const ExploreFilters = ({
       ['1k+', '1000'],
       ['10k+', '10000']
     ],
-
     watchers: [
       ['Any', ''],
       ['10+', '10'],
@@ -112,15 +168,13 @@ const ExploreFilters = ({
     ]
   }
 
-  const filterLabels = {
-    language: 'Language',
-    topics: 'Topics',
-    stars: 'Stars',
-    forks: 'Forks',
-    watchers: 'Watchers',
-    license: 'License',
-    activity: 'Activity'
-  }
+  const filteredLanguages = multiSelectOptions.language.filter(language =>
+    language.toLowerCase().includes(languageSearch.toLowerCase())
+  )
+
+  const filteredTechnologies = multiSelectOptions.topics.filter(topic =>
+    topic.toLowerCase().includes(technologySearch.toLowerCase())
+  )
 
   const toggleMultiFilter = (filter, value) => {
     const currentValues = filters[filter] || []
@@ -135,30 +189,23 @@ const ExploreFilters = ({
     })
   }
 
-  const selectSingleFilter = (filter, value) => {
+  const handleSingleSelect = (filter, value) => {
     setFilters({
       ...filters,
-      [filter]: value === 'Any' ? '' : value
+      [filter]: value
+    })
+
+    setOpenFilter(null)
+  }
+
+  const handleMetricSelect = (filter, value) => {
+    setFilters({
+      ...filters,
+      [filter]: value
     })
   }
 
-  const selectMetric = (metric, value) => {
-    setFilters({
-      ...filters,
-      [metric]: value
-    })
-  }
-
-  const clearFilter = (filter) => {
-    const newFilters = {
-      ...filters,
-      [filter]: Array.isArray(filters[filter]) ? [] : ''
-    }
-
-    setFilters(newFilters)
-  }
-
-  const clearFilters = () => {
+  const handleClearAll = () => {
     setFilters({
       language: [],
       topics: [],
@@ -170,33 +217,12 @@ const ExploreFilters = ({
       beginner: false
     })
 
-    setMetricSort('', '')
+    setLanguageSearch('')
+    setTechnologySearch('')
     setOpenFilter(null)
   }
 
-  const getFilterText = (filter) => {
-    const value = filters[filter]
-
-    if (Array.isArray(value)) {
-      if (value.length === 0) {
-        return filterLabels[filter]
-      }
-
-      if (value.length === 1) {
-        return value[0]
-      }
-
-      return `${filterLabels[filter]} · ${value.length}`
-    }
-
-    if (!value) {
-      return filterLabels[filter]
-    }
-
-    return value
-  }
-
-  const activeFilters =
+  const selectedFilterCount =
     filters.language.length +
     filters.topics.length +
     (filters.stars ? 1 : 0) +
@@ -206,368 +232,396 @@ const ExploreFilters = ({
     (filters.activity ? 1 : 0) +
     (filters.beginner ? 1 : 0)
 
-  const isMetricSorted = metric => metricSort === metric
+  const renderMultiSelectDropdown = (filter) => {
+    const isLanguage = filter === 'language'
+    const searchValue = isLanguage ? languageSearch : technologySearch
+    const setSearchValue = isLanguage ? setLanguageSearch : setTechnologySearch
+    const options = isLanguage ? filteredLanguages : filteredTechnologies
 
-  return (
-    <div className="mt-6">
+    return (
+      <div className={`absolute top-full left-0 z-30 mt-2 bg-white border border-gray-200 rounded-xl shadow-lg ${isLanguage ? 'w-64' : 'w-80'}`}>
+        <div className="p-3 border-b border-gray-100">
+          <div className="flex items-center h-9 px-3 border border-gray-200 rounded-lg">
+            <Search className="mr-2 text-gray-400 size-4 shrink-0" />
+            <input
+              type="text"
+              value={searchValue}
+              onChange={(e) => setSearchValue(e.target.value)}
+              placeholder={isLanguage ? 'Search languages...' : 'Search technologies...'}
+              className="w-full text-sm text-gray-700 bg-transparent outline-none placeholder:text-gray-400"
+              autoFocus
+            />
+            {searchValue && (
+              <button
+                onClick={() => setSearchValue('')}
+                className="p-0.5 text-gray-400 rounded hover:bg-gray-100"
+              >
+                <X className="size-3.5" />
+              </button>
+            )}
+          </div>
+        </div>
 
-      <div className="flex items-center justify-between">
+        <div className="max-h-64 overflow-y-auto p-2">
+          {options.length > 0 ? (
+            options.map(option => {
+              const selected = filters[filter]?.includes(option)
+
+              return (
+                <button
+                  key={option}
+                  onClick={() => toggleMultiFilter(filter, option)}
+                  className={`flex items-center w-full px-3 py-2 text-sm text-left rounded-lg transition ${
+                    selected
+                      ? 'bg-indigo-50 text-indigo-700'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <span
+                    className={`flex items-center justify-center size-4 mr-3 border rounded ${
+                      selected
+                        ? 'bg-indigo-600 border-indigo-600'
+                        : 'bg-white border-gray-300'
+                    }`}
+                  >
+                    {selected && (
+                      <svg
+                        viewBox="0 0 20 20"
+                        fill="none"
+                        className="size-3 text-white"
+                      >
+                        <path
+                          d="M5 10.5L8.5 14L15 7"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    )}
+                  </span>
+                  <span className="truncate">{option}</span>
+                </button>
+              )
+            })
+          ) : (
+            <p className="px-3 py-4 text-sm text-center text-gray-500">
+              No {isLanguage ? 'languages' : 'technologies'} found
+            </p>
+          )}
+        </div>
+
+        {filters[filter]?.length > 0 && (
+          <div className="flex items-center justify-between px-3 py-2 border-t border-gray-100">
+            <span className="text-xs font-medium text-gray-500">
+              {filters[filter].length} selected
+            </span>
+            <button
+              onClick={() => setFilters({...filters, [filter]: []})}
+              className="text-xs font-semibold text-indigo-600 hover:text-indigo-700"
+            >
+              Clear
+            </button>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  const renderMetricDropdown = (filter) => (
+    <div className="absolute top-full left-0 z-30 w-56 mt-2 overflow-hidden bg-white border border-gray-200 rounded-xl shadow-lg">
+      <div className="max-h-56 overflow-y-auto p-2">
+        {metricOptions[filter].map(([label, value]) => (
+          <button
+            key={label}
+            onClick={() => handleMetricSelect(filter, value)}
+            className={`flex items-center w-full px-3 py-2 text-sm text-left rounded-lg transition ${
+              filters[filter] === value
+                ? 'bg-indigo-50 text-indigo-700'
+                : 'text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <div className="px-3 py-3 border-t border-gray-100">
+        <p className="mb-2 text-xs font-semibold text-gray-500">Sort by {filter}</p>
 
         <div className="flex items-center gap-2">
-          <SlidersHorizontal className="text-gray-700 size-5" />
+          <button
+            onClick={() => setMetricSort(filter, 'asc')}
+            className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition ${
+              metricSort === filter && sortOrder === 'asc'
+                ? 'bg-indigo-100 text-indigo-700'
+                : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            Low → High
+          </button>
 
-          <h2 className="font-semibold text-gray-800">
-            Filters
-          </h2>
+          <button
+            onClick={() => setMetricSort(filter, 'desc')}
+            className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition ${
+              metricSort === filter && sortOrder === 'desc'
+                ? 'bg-indigo-100 text-indigo-700'
+                : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            High → Low
+          </button>
+        </div>
+      </div>
+    </div>
+  )
 
-          {activeFilters > 0 && (
-            <span className="flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-indigo-600 rounded-full">
-              {activeFilters}
+  const renderSingleSelectDropdown = (filter) => (
+    <div className="absolute top-full left-0 z-30 w-52 mt-2 overflow-hidden bg-white border border-gray-200 rounded-xl shadow-lg">
+      <div className="max-h-64 overflow-y-auto p-2">
+        {singleSelectOptions[filter].map(([label, value]) => (
+          <button
+            key={label}
+            onClick={() => handleSingleSelect(filter, value)}
+            className={`flex items-center w-full px-3 py-2 text-sm text-left rounded-lg transition ${
+              filters[filter] === value
+                ? 'bg-indigo-50 text-indigo-700'
+                : 'text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            <span
+              className={`size-4 mr-3 rounded-full border flex items-center justify-center ${
+                filters[filter] === value
+                  ? 'border-indigo-600'
+                  : 'border-gray-300'
+              }`}
+            >
+              {filters[filter] === value && (
+                <span className="size-2 rounded-full bg-indigo-600" />
+              )}
+            </span>
+            {label}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+
+  return (
+    <div ref={filterRef} className="mt-6">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <SlidersHorizontal className="size-5 text-gray-600" />
+          <span className="text-lg font-semibold text-gray-900">Filters</span>
+
+          {selectedFilterCount > 0 && (
+            <span className="flex items-center justify-center size-6 text-xs font-bold text-indigo-700 bg-indigo-100 rounded-full">
+              {selectedFilterCount}
             </span>
           )}
         </div>
 
-        {activeFilters > 0 && (
+        {selectedFilterCount > 0 && (
           <button
-            onClick={clearFilters}
-            className="flex items-center gap-1 text-sm font-medium text-indigo-600 hover:text-indigo-800 transition"
+            onClick={handleClearAll}
+            className="flex items-center gap-1 text-sm font-semibold text-indigo-600 hover:text-indigo-700"
           >
             <X className="size-4" />
             Clear all
           </button>
         )}
-
       </div>
 
-      <div className="flex flex-wrap items-center gap-3 mt-3">
-
-        {/* LANGUAGE */}
-
-        <div
-          className="relative"
-          onMouseEnter={() => setOpenFilter('language')}
-        >
-
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative">
           <button
-            onClick={() => setOpenFilter(openFilter === 'language' ? null : 'language')}
-            className={`flex items-center gap-3 px-4 py-2.5 text-sm font-medium bg-white border rounded-lg transition ${
-              filters.language.length > 0
-                ? 'border-indigo-400 text-indigo-600 bg-indigo-50'
-                : 'border-gray-300 text-gray-700 hover:border-indigo-400 hover:bg-indigo-50'
+            onClick={() => {
+              setOpenFilter(openFilter === 'language' ? null : 'language')
+              setLanguageSearch('')
+              setTechnologySearch('')
+            }}
+            className={`flex items-center gap-2 h-12 px-4 bg-white border rounded-xl text-sm font-medium transition ${
+              openFilter === 'language' || filters.language.length > 0
+                ? 'border-indigo-400 text-indigo-700'
+                : 'border-gray-300 text-gray-700 hover:border-gray-400'
             }`}
           >
-            <span>{getFilterText('language')}</span>
-            <ChevronDown className={`size-4 transition ${openFilter === 'language' ? 'rotate-180' : ''}`} />
-          </button>
-
-          {openFilter === 'language' && (
-            <div
-              onMouseLeave={() => setOpenFilter(null)}
-              className="absolute left-0 z-30 grid grid-cols-2 w-105 gap-1 p-2 mt-2 bg-white border border-gray-200 rounded-xl shadow-xl"
-            >
-
-              {multiSelectOptions.language.map(option => {
-                const selected = filters.language.includes(option)
-
-                return (
-                  <button
-                    key={option}
-                    onClick={() => toggleMultiFilter('language', option)}
-                    className={`flex items-center gap-2 px-3 py-2.5 text-sm text-left rounded-lg transition ${
-                      selected
-                        ? 'bg-indigo-50 text-indigo-700 font-semibold'
-                        : 'text-gray-700 hover:bg-indigo-50 hover:text-indigo-700'
-                    }`}
-                  >
-                    <span className={`flex items-center justify-center w-4 h-4 border rounded ${
-                      selected
-                        ? 'bg-indigo-600 border-indigo-600 text-white'
-                        : 'border-gray-300'
-                    }`}>
-                      {selected && <span className="text-[10px]">✓</span>}
-                    </span>
-
-                    {option}
-                  </button>
-                )
-              })}
-
-            </div>
-          )}
-
-        </div>
-
-        {/* TOPICS */}
-
-        <div
-          className="relative"
-          onMouseEnter={() => setOpenFilter('topics')}
-        >
-
-          <button
-            onClick={() => setOpenFilter(openFilter === 'topics' ? null : 'topics')}
-            className={`flex items-center gap-3 px-4 py-2.5 text-sm font-medium bg-white border rounded-lg transition ${
-              filters.topics.length > 0
-                ? 'border-indigo-400 text-indigo-600 bg-indigo-50'
-                : 'border-gray-300 text-gray-700 hover:border-indigo-400 hover:bg-indigo-50'
-            }`}
-          >
-            <span>{getFilterText('topics')}</span>
-            <ChevronDown className={`size-4 transition ${openFilter === 'topics' ? 'rotate-180' : ''}`} />
-          </button>
-
-          {openFilter === 'topics' && (
-            <div
-              onMouseLeave={() => setOpenFilter(null)}
-              className="absolute left-0 z-30 grid grid-cols-2 w-105 gap-1 p-2 mt-2 bg-white border border-gray-200 rounded-xl shadow-xl"
-            >
-
-              {multiSelectOptions.topics.map(option => {
-                const selected = filters.topics.includes(option)
-
-                return (
-                  <button
-                    key={option}
-                    onClick={() => toggleMultiFilter('topics', option)}
-                    className={`flex items-center gap-2 px-3 py-2.5 text-sm text-left rounded-lg transition ${
-                      selected
-                        ? 'bg-indigo-50 text-indigo-700 font-semibold'
-                        : 'text-gray-700 hover:bg-indigo-50 hover:text-indigo-700'
-                    }`}
-                  >
-                    <span className={`flex items-center justify-center w-4 h-4 border rounded ${
-                      selected
-                        ? 'bg-indigo-600 border-indigo-600 text-white'
-                        : 'border-gray-300'
-                    }`}>
-                      {selected && <span className="text-[10px]">✓</span>}
-                    </span>
-
-                    {option}
-                  </button>
-                )
-              })}
-
-            </div>
-          )}
-
-        </div>
-
-        {/* METRIC FILTERS */}
-
-        {['stars', 'forks', 'watchers'].map(metric => (
-
-          <div
-            key={metric}
-            className="relative"
-            onMouseEnter={() => setOpenFilter(metric)}
-          >
-
-            <button
-              onClick={() => setOpenFilter(openFilter === metric ? null : metric)}
-              className={`flex items-center gap-3 px-4 py-2.5 text-sm font-medium bg-white border rounded-lg transition ${
-                filters[metric] || isMetricSorted(metric)
-                  ? 'border-indigo-400 text-indigo-600 bg-indigo-50'
-                  : 'border-gray-300 text-gray-700 hover:border-indigo-400 hover:bg-indigo-50'
-              }`}
-            >
-              <span>{getFilterText(metric)}</span>
-              <ChevronDown className={`size-4 transition ${openFilter === metric ? 'rotate-180' : ''}`} />
-            </button>
-
-            {openFilter === metric && (
-              <div
-                onMouseLeave={() => setOpenFilter(null)}
-                className="absolute left-0 z-30 w-60 p-2 mt-2 bg-white border border-gray-200 rounded-xl shadow-xl"
-              >
-
-                <p className="px-3 pt-2 pb-1 text-xs font-semibold text-gray-400 uppercase">
-                  {filterLabels[metric]}
-                </p>
-
-                {metricOptions[metric].map(([label, value]) => (
-                  <button
-                    key={label}
-                    onClick={() => selectMetric(metric, value)}
-                    className="flex items-center w-full gap-3 px-3 py-2.5 text-sm text-left text-gray-700 rounded-lg hover:bg-indigo-50 hover:text-indigo-700 transition"
-                  >
-                    <span className={`flex items-center justify-center w-4 h-4 border rounded-full ${
-                      filters[metric] === value
-                        ? 'border-indigo-600'
-                        : 'border-gray-300'
-                    }`}>
-                      {filters[metric] === value && (
-                        <span className="w-2 h-2 bg-indigo-600 rounded-full" />
-                      )}
-                    </span>
-
-                    {label}
-                  </button>
-                ))}
-
-                <div className="px-3 pt-3 mt-2 border-t border-gray-100">
-
-                  <p className="mb-2 text-xs font-semibold text-gray-400 uppercase">
-                    Sort
-                  </p>
-
-                  <div className="flex gap-2">
-
-                    <button
-                      onClick={() => setMetricSort(metric, 'asc')}
-                      className={`flex-1 px-2 py-2 text-xs font-medium border rounded-lg transition ${
-                        isMetricSorted(metric) && sortOrder === 'asc'
-                          ? 'bg-indigo-600 text-white border-indigo-600'
-                          : 'text-gray-600 border-gray-300 hover:border-indigo-400 hover:bg-indigo-50'
-                      }`}
-                    >
-                      Ascending
-                    </button>
-
-                    <button
-                      onClick={() => setMetricSort(metric, 'desc')}
-                      className={`flex-1 px-2 py-2 text-xs font-medium border rounded-lg transition ${
-                        isMetricSorted(metric) && sortOrder === 'desc'
-                          ? 'bg-indigo-600 text-white border-indigo-600'
-                          : 'text-gray-600 border-gray-300 hover:border-indigo-400 hover:bg-indigo-50'
-                      }`}
-                    >
-                      Descending
-                    </button>
-
-                  </div>
-
-                </div>
-
-              </div>
+            <span>Language</span>
+            {filters.language.length > 0 && (
+              <span className="flex items-center justify-center min-w-5 h-5 px-1 text-xs font-bold text-indigo-700 bg-indigo-100 rounded-full">
+                {filters.language.length}
+              </span>
             )}
+            <ChevronDown
+              className={`size-4 transition-transform ${
+                openFilter === 'language' ? 'rotate-180' : ''
+              }`}
+            />
+          </button>
 
-          </div>
+          {openFilter === 'language' && renderMultiSelectDropdown('language')}
+        </div>
 
-        ))}
+        <div className="relative">
+          <button
+            onClick={() => {
+              setOpenFilter(openFilter === 'topics' ? null : 'topics')
+              setLanguageSearch('')
+              setTechnologySearch('')
+            }}
+            className={`flex items-center gap-2 h-12 px-4 bg-white border rounded-xl text-sm font-medium transition ${
+              openFilter === 'topics' || filters.topics.length > 0
+                ? 'border-indigo-400 text-indigo-700'
+                : 'border-gray-300 text-gray-700 hover:border-gray-400'
+            }`}
+          >
+            <span>Technologies</span>
+            {filters.topics.length > 0 && (
+              <span className="flex items-center justify-center min-w-5 h-5 px-1 text-xs font-bold text-indigo-700 bg-indigo-100 rounded-full">
+                {filters.topics.length}
+              </span>
+            )}
+            <ChevronDown
+              className={`size-4 transition-transform ${
+                openFilter === 'topics' ? 'rotate-180' : ''
+              }`}
+            />
+          </button>
 
-        {/* LICENSE */}
+          {openFilter === 'topics' && renderMultiSelectDropdown('topics')}
+        </div>
 
-        <div
-          className="relative"
-          onMouseEnter={() => setOpenFilter('license')}
-        >
+        <div className="relative">
+          <button
+            onClick={() => setOpenFilter(openFilter === 'stars' ? null : 'stars')}
+            className={`flex items-center gap-2 h-12 px-4 bg-white border rounded-xl text-sm font-medium transition ${
+              openFilter === 'stars' || filters.stars
+                ? 'border-indigo-400 text-indigo-700'
+                : 'border-gray-300 text-gray-700 hover:border-gray-400'
+            }`}
+          >
+            <span>Stars</span>
+            {filters.stars && (
+              <span className="text-xs font-semibold text-indigo-600">
+                {filters.stars}+
+              </span>
+            )}
+            <ChevronDown
+              className={`size-4 transition-transform ${
+                openFilter === 'stars' ? 'rotate-180' : ''
+              }`}
+            />
+          </button>
 
+          {openFilter === 'stars' && renderMetricDropdown('stars')}
+        </div>
+
+        <div className="relative">
+          <button
+            onClick={() => setOpenFilter(openFilter === 'forks' ? null : 'forks')}
+            className={`flex items-center gap-2 h-12 px-4 bg-white border rounded-xl text-sm font-medium transition ${
+              openFilter === 'forks' || filters.forks
+                ? 'border-indigo-400 text-indigo-700'
+                : 'border-gray-300 text-gray-700 hover:border-gray-400'
+            }`}
+          >
+            <span>Forks</span>
+            {filters.forks && (
+              <span className="text-xs font-semibold text-indigo-600">
+                {filters.forks}+
+              </span>
+            )}
+            <ChevronDown
+              className={`size-4 transition-transform ${
+                openFilter === 'forks' ? 'rotate-180' : ''
+              }`}
+            />
+          </button>
+
+          {openFilter === 'forks' && renderMetricDropdown('forks')}
+        </div>
+
+        <div className="relative">
+          <button
+            onClick={() => setOpenFilter(openFilter === 'watchers' ? null : 'watchers')}
+            className={`flex items-center gap-2 h-12 px-4 bg-white border rounded-xl text-sm font-medium transition ${
+              openFilter === 'watchers' || filters.watchers
+                ? 'border-indigo-400 text-indigo-700'
+                : 'border-gray-300 text-gray-700 hover:border-gray-400'
+            }`}
+          >
+            <span>Watchers</span>
+            {filters.watchers && (
+              <span className="text-xs font-semibold text-indigo-600">
+                {filters.watchers}+
+              </span>
+            )}
+            <ChevronDown
+              className={`size-4 transition-transform ${
+                openFilter === 'watchers' ? 'rotate-180' : ''
+              }`}
+            />
+          </button>
+
+          {openFilter === 'watchers' && renderMetricDropdown('watchers')}
+        </div>
+
+        <div className="relative">
           <button
             onClick={() => setOpenFilter(openFilter === 'license' ? null : 'license')}
-            className={`flex items-center gap-3 px-4 py-2.5 text-sm font-medium bg-white border rounded-lg transition ${
-              filters.license
-                ? 'border-indigo-400 text-indigo-600 bg-indigo-50'
-                : 'border-gray-300 text-gray-700 hover:border-indigo-400 hover:bg-indigo-50'
+            className={`flex items-center gap-2 h-12 px-4 bg-white border rounded-xl text-sm font-medium transition ${
+              openFilter === 'license' || filters.license
+                ? 'border-indigo-400 text-indigo-700'
+                : 'border-gray-300 text-gray-700 hover:border-gray-400'
             }`}
           >
-            <span>{getFilterText('license')}</span>
-            <ChevronDown className={`size-4 transition ${openFilter === 'license' ? 'rotate-180' : ''}`} />
+            <span>License</span>
+            <ChevronDown
+              className={`size-4 transition-transform ${
+                openFilter === 'license' ? 'rotate-180' : ''
+              }`}
+            />
           </button>
 
-          {openFilter === 'license' && (
-            <div
-              onMouseLeave={() => setOpenFilter(null)}
-              className="absolute left-0 z-30 w-56 p-2 mt-2 bg-white border border-gray-200 rounded-xl shadow-xl"
-            >
-
-              {singleSelectOptions.license.map(option => (
-                <button
-                  key={option}
-                  onClick={() => selectSingleFilter('license', option)}
-                  className="flex items-center w-full gap-3 px-3 py-2.5 text-sm text-left text-gray-700 rounded-lg hover:bg-indigo-50 hover:text-indigo-700 transition"
-                >
-                  <span className={`flex items-center justify-center w-4 h-4 border rounded-full ${
-                    (filters.license === '' && option === 'Any') || filters.license === option
-                      ? 'border-indigo-600'
-                      : 'border-gray-300'
-                  }`}>
-                    {((filters.license === '' && option === 'Any') || filters.license === option) && (
-                      <span className="w-2 h-2 bg-indigo-600 rounded-full" />
-                    )}
-                  </span>
-
-                  {option}
-                </button>
-              ))}
-
-            </div>
-          )}
-
+          {openFilter === 'license' && renderSingleSelectDropdown('license')}
         </div>
 
-        {/* ACTIVITY */}
-
-        <div
-          className="relative"
-          onMouseEnter={() => setOpenFilter('activity')}
-        >
-
+        <div className="relative">
           <button
             onClick={() => setOpenFilter(openFilter === 'activity' ? null : 'activity')}
-            className={`flex items-center gap-3 px-4 py-2.5 text-sm font-medium bg-white border rounded-lg transition ${
-              filters.activity
-                ? 'border-indigo-400 text-indigo-600 bg-indigo-50'
-                : 'border-gray-300 text-gray-700 hover:border-indigo-400 hover:bg-indigo-50'
+            className={`flex items-center gap-2 h-12 px-4 bg-white border rounded-xl text-sm font-medium transition ${
+              openFilter === 'activity' || filters.activity
+                ? 'border-indigo-400 text-indigo-700'
+                : 'border-gray-300 text-gray-700 hover:border-gray-400'
             }`}
           >
-            <span>{getFilterText('activity')}</span>
-            <ChevronDown className={`size-4 transition ${openFilter === 'activity' ? 'rotate-180' : ''}`} />
+            <span>Activity</span>
+            <ChevronDown
+              className={`size-4 transition-transform ${
+                openFilter === 'activity' ? 'rotate-180' : ''
+              }`}
+            />
           </button>
 
-          {openFilter === 'activity' && (
-            <div
-              onMouseLeave={() => setOpenFilter(null)}
-              className="absolute left-0 z-30 w-56 p-2 mt-2 bg-white border border-gray-200 rounded-xl shadow-xl"
-            >
-
-              {singleSelectOptions.activity.map(option => (
-                <button
-                  key={option}
-                  onClick={() => selectSingleFilter('activity', option)}
-                  className="flex items-center w-full gap-3 px-3 py-2.5 text-sm text-left text-gray-700 rounded-lg hover:bg-indigo-50 hover:text-indigo-700 transition"
-                >
-                  <span className={`flex items-center justify-center w-4 h-4 border rounded-full ${
-                    (filters.activity === '' && option === 'Any') || filters.activity === option
-                      ? 'border-indigo-600'
-                      : 'border-gray-300'
-                  }`}>
-                    {((filters.activity === '' && option === 'Any') || filters.activity === option) && (
-                      <span className="w-2 h-2 bg-indigo-600 rounded-full" />
-                    )}
-                  </span>
-
-                  {option}
-                </button>
-              ))}
-
-            </div>
-          )}
-
+          {openFilter === 'activity' && renderSingleSelectDropdown('activity')}
         </div>
 
-        {/* BEGINNER */}
-
-        <label className="flex items-center gap-2 px-2 text-sm text-gray-700 cursor-pointer">
-
+        <label className="flex items-center gap-2 h-12 px-2 text-sm font-medium text-gray-700 cursor-pointer">
           <input
             type="checkbox"
             checked={filters.beginner}
-            onChange={(e) => setFilters({
-              ...filters,
-              beginner: e.target.checked
-            })}
-            className="w-4 h-4 accent-indigo-600"
+            onChange={(e) =>
+              setFilters({
+                ...filters,
+                beginner: e.target.checked
+              })
+            }
+            className="size-5 accent-indigo-600"
           />
-
           <span>Good for beginners</span>
-
-          <Info className="text-gray-400 size-4" />
-
+          <Info className="size-4 text-gray-400" />
         </label>
-
       </div>
-
     </div>
   )
 }
