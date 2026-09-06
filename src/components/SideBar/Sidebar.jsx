@@ -69,7 +69,6 @@ const Sidebar = () => {
           </NavLink>
         </div>
 
-
       <div className='flex flex-col m-3  '>
         <img src={rocket} className='rounded-3xl relative brightness-100'/>
         <div className='absolute w-38 flex flex-col mx-3 my-5'>
