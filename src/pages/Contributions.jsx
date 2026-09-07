@@ -38,6 +38,8 @@ const Contributions = () => {
     }
   })
 
+  const [filterOpen, setFilterOpen] = useState(false)
+
   useEffect(() => {
     sessionStorage.setItem(
       'sidequest-contribution-filters',
@@ -52,14 +54,27 @@ const Contributions = () => {
     )
   }, [search])
 
+  const filterCount =
+    (filters.language?.length || 0) +
+    (filters.technology?.length || 0) +
+    (filters.labels?.length || 0) +
+    (filters.type?.length || 0) +
+    (filters.difficulty !== 'All' ? 1 : 0) +
+    (filters.activity !== 'All' ? 1 : 0) +
+    (filters.assignment !== 'All' ? 1 : 0) +
+    (filters.issueAge !== 'All' ? 1 : 0) +
+    (filters.discussion !== 'All' ? 1 : 0) +
+    (filters.beginner ? 1 : 0)
+
   return (
     <div className="px-8 py-6">
       <div className="flex items-start gap-6">
-
         <div className="flex-1 min-w-0">
           <ContributionHeader
             search={search}
             setSearch={setSearch}
+            filterCount={filterCount}
+            onFilterClick={() => setFilterOpen(true)}
           />
 
           <div className="mt-5">
@@ -70,12 +85,32 @@ const Contributions = () => {
           </div>
         </div>
 
-        <ContributionSidebar
-          filters={filters}
-          setFilters={setFilters}
-        />
-
+        <div className="hidden xl:block">
+          <ContributionSidebar
+            filters={filters}
+            setFilters={setFilters}
+          />
+        </div>
       </div>
+
+      {filterOpen && (
+        <div
+          className="fixed inset-0 z-70 flex items-center justify-center px-4 bg-black/30 xl:hidden"
+          onMouseDown={() => setFilterOpen(false)}
+        >
+          <div
+            className="w-full max-w-lg max-h-[88vh] overflow-y-auto"
+            onMouseDown={event => event.stopPropagation()}
+          >
+            <ContributionSidebar
+              filters={filters}
+              setFilters={setFilters}
+              mobileMode
+              onClose={() => setFilterOpen(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

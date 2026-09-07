@@ -17,6 +17,7 @@ const githubHeaders = {
     : {})
 }
 
+const {createContributionRouter} = require('./routes/contributions')
 const cache = new Map()
 const CACHE_TIME = 30 * 1000
 
@@ -142,7 +143,8 @@ const formatRepository = repo => ({
 
 const githubRequest = async url => {
   const cached = cache.get(url)
-
+  app.use('/api/contributions', createContributionRouter({githubRequest}))
+  
   if (cached && Date.now() - cached.time < CACHE_TIME) {
     return cached.data
   }

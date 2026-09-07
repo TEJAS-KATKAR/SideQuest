@@ -1,8 +1,7 @@
 import React, {useEffect, useRef, useState} from 'react'
 import {Check, ChevronDown, Filter, RotateCcw, Search, X} from 'lucide-react'
 
-const ContributionSidebar = ({filters, setFilters}) => {
-  const [openFilter, setOpenFilter] = useState(null)
+const ContributionSidebar = ({filters, setFilters, mobileMode = false, onClose}) => {  const [openFilter, setOpenFilter] = useState(null)
   const [draftFilters, setDraftFilters] = useState(filters)
   const [languageSearch, setLanguageSearch] = useState('')
   const [technologySearch, setTechnologySearch] = useState('')
@@ -224,6 +223,7 @@ const ContributionSidebar = ({filters, setFilters}) => {
   const applyFilters = () => {
     setFilters(draftFilters)
     setOpenFilter(null)
+    onClose?.()
   }
 
   const resetFilters = () => {
@@ -345,8 +345,8 @@ const ContributionSidebar = ({filters, setFilters}) => {
   )
 
   return (
-    <aside ref={filterRef} className="w-72 shrink-0">
-      <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+    <aside ref={filterRef} className={`${mobileMode ? 'w-full' : 'w-72 shrink-0'}`}>
+      <div className={`bg-white border border-gray-200 rounded-xl p-4 shadow-sm ${mobileMode ? 'max-h-[88vh] overflow-y-auto' : ''}`}>
 
       <div className="flex items-center justify-between">
       <div className="flex items-center gap-2">

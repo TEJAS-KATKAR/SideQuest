@@ -1,311 +1,293 @@
-import React from 'react'
+import React, {useEffect, useState} from 'react'
 import IssueCard from './IssueCard'
 
-const issues = [
-  {
-    repo: 'vercel/next.js',
-    title: 'Improve mobile navigation menu accessibility',
-    number: '49245',
-    opened: '2 days ago',
-    updated: '4 hours ago',
-    difficulty: 'Beginner',
-    type: 'Accessibility',
-    labels: ['good first issue', 'accessibility', 'React'],
-    language: 'TypeScript',
-    technologies: ['React', 'Next.js'],
-    comments: 6,
-    stars: 113000,
-    forks: 24500,
-    watchers: 3100,
-    activity: 'Very active',
-    assignment: 'Unassigned',
-    issueAge: 'Last 7 days',
-    discussion: 'Medium',
-    scope: 'Small',
-    beginner: true,
-    verified: true,
-    icon: 'N',
-    reasons: [
-      'Marked as good first issue',
-      'Small, focused change',
-      'Clear issue description'
-    ]
-  },
-  {
-    repo: 'facebook/react',
-    title: 'Fix typo in documentation',
-    number: '27985',
-    opened: '1 day ago',
-    updated: '8 hours ago',
-    difficulty: 'Beginner',
-    type: 'Documentation',
-    labels: ['good first issue', 'documentation'],
-    language: 'JavaScript',
-    technologies: ['React'],
-    comments: 3,
-    stars: 235000,
-    forks: 48000,
-    watchers: 6200,
-    activity: 'Very active',
-    assignment: 'Unassigned',
-    issueAge: 'Last 7 days',
-    discussion: 'Low',
-    scope: 'Small',
-    beginner: true,
-    verified: true,
-    icon: '⚛',
-    reasons: [
-      'Documentation-only change',
-      'Low implementation risk',
-      'Good first issue label'
-    ]
-  },
-  {
-    repo: 'sindresorhus/awesome',
-    title: 'Add dark mode toggle to README',
-    number: '2141',
-    opened: '3 days ago',
-    updated: '1 day ago',
-    difficulty: 'Easy',
-    type: 'Feature',
-    labels: ['enhancement', 'documentation', 'CSS'],
-    language: 'JavaScript',
-    technologies: ['JavaScript', 'CSS'],
-    comments: 7,
-    stars: 420000,
-    forks: 31000,
-    watchers: 7200,
-    activity: 'Active',
-    assignment: 'Unassigned',
-    issueAge: 'Last 7 days',
-    discussion: 'Medium',
-    scope: 'Small',
-    beginner: false,
-    verified: true,
-    icon: 'T',
-    reasons: [
-      'Straightforward UI change',
-      'Limited project scope',
-      'Maintainers recently active'
-    ]
-  },
-  {
-    repo: 'nodejs/node',
-    title: 'Improve error message for invalid input',
-    number: '50212',
-    opened: '5 hours ago',
-    updated: '2 hours ago',
-    difficulty: 'Easy',
-    type: 'Bug fix',
-    labels: ['bug', 'good first issue'],
-    language: 'JavaScript',
-    technologies: ['Node.js'],
-    comments: 9,
-    stars: 110000,
-    forks: 31000,
-    watchers: 4200,
-    activity: 'Very active',
-    assignment: 'Unassigned',
-    issueAge: 'Today',
-    discussion: 'Medium',
-    scope: 'Small',
-    beginner: true,
-    verified: true,
-    icon: '⬡',
-    reasons: [
-      'Good first issue label',
-      'Problem is clearly described',
-      'Active maintainer community'
-    ]
-  },
-  {
-    repo: 'tailwindlabs/tailwindcss',
-    title: 'Update docs for new utility class',
-    number: '12034',
-    opened: '6 hours ago',
-    updated: '3 hours ago',
-    difficulty: 'Easy',
-    type: 'Documentation',
-    labels: ['documentation', 'good first issue'],
-    language: 'CSS',
-    technologies: ['Tailwind CSS'],
-    comments: 4,
-    stars: 89000,
-    forks: 4600,
-    watchers: 1800,
-    activity: 'Active',
-    assignment: 'Unassigned',
-    issueAge: 'Today',
-    discussion: 'Low',
-    scope: 'Small',
-    beginner: true,
-    verified: true,
-    icon: '≈',
-    reasons: [
-      'Documentation-focused task',
-      'Clear steps provided',
-      'Active project'
-    ]
-  }
-]
-
 const IssueList = ({filters, search}) => {
+  const [issues, setIssues] = useState([])
+  const [total, setTotal] = useState(0)
+  const [totalPages, setTotalPages] = useState(1)
+  const [page, setPage] = useState(1)
+  const [sort, setSort] = useState('Best match')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
-  const filteredIssues = issues.filter(issue => {
-    const searchText = search.toLowerCase()
+  useEffect(() => {
+    setPage(1)
+  }, [filters, search, sort])
 
-    const matchesSearch =
-      !searchText ||
-      issue.title.toLowerCase().includes(searchText) ||
-      issue.repo.toLowerCase().includes(searchText) ||
-      issue.labels.some(label => label.toLowerCase().includes(searchText)) ||
-      issue.technologies.some(technology => technology.toLowerCase().includes(searchText))
+  useEffect(() => {
+    const controller = new AbortController()
 
-    const matchesDifficulty =
-      filters.difficulty === 'All' ||
-      issue.difficulty === filters.difficulty
+    const timer = setTimeout(async () => {
+      setLoading(true)
+      setError('')
 
-    const matchesLanguage =
-      !filters.language?.length ||
-      filters.language.includes(issue.language)
+      try {
+        const params = new URLSearchParams()
 
-    const matchesTechnology =
-      !filters.technology?.length ||
-      filters.technology.some(technology =>
-        issue.technologies.includes(technology)
-      )
+        if (search.trim()) {
+          params.set('q', search.trim())
+        }
 
-    const matchesActivity =
-      filters.activity === 'All' ||
-      issue.activity === filters.activity
+        filters.language.forEach(value => {
+          params.append('language', value)
+        })
 
-    const matchesLabels =
-      !filters.labels?.length ||
-      filters.labels.some(label =>
-        issue.labels.some(issueLabel =>
-          issueLabel.toLowerCase() === label.toLowerCase()
+        filters.technology.forEach(value => {
+          params.append('technology', value)
+        })
+
+        filters.labels.forEach(value => {
+          params.append('labels', value)
+        })
+
+        filters.type.forEach(value => {
+          params.append('type', value)
+        })
+
+        if (filters.difficulty !== 'All') {
+          params.set('difficulty', filters.difficulty)
+        }
+
+        if (filters.activity !== 'All') {
+          params.set('activity', filters.activity)
+        }
+
+        if (filters.assignment !== 'All') {
+          params.set('assignment', filters.assignment)
+        }
+
+        if (filters.issueAge !== 'All') {
+          params.set('issueAge', filters.issueAge)
+        }
+
+        if (filters.discussion !== 'All') {
+          params.set('discussion', filters.discussion)
+        }
+
+        if (filters.beginner) {
+          params.set('beginner', 'true')
+        }
+
+        params.set('sort', sort)
+        params.set('page', String(page))
+        params.set('per_page', '10')
+
+        const response = await fetch(
+          `http://localhost:5000/api/contributions/search?${params.toString()}`,
+          {
+            signal: controller.signal
+          }
         )
-      )
 
-    const matchesType =
-      !filters.type?.length ||
-      filters.type.includes(issue.type)
+        const data = await response.json()
 
-    const matchesAssignment =
-      filters.assignment === 'All' ||
-      issue.assignment === filters.assignment
+        if (!response.ok) {
+          throw new Error(
+            data?.error || 'Failed to load contribution opportunities'
+          )
+        }
 
-    const matchesIssueAge =
-      filters.issueAge === 'All' ||
-      issue.issueAge === filters.issueAge
+        setIssues(data.issues || [])
+        setTotal(Number(data.total) || 0)
+        setTotalPages(Number(data.totalPages) || 1)
+      } catch (error) {
+        if (error.name === 'AbortError') return
 
-    const matchesDiscussion =
-      filters.discussion === 'All' ||
-      issue.discussion === filters.discussion
+        console.error('Contribution fetch error:', error)
+        setIssues([])
+        setTotal(0)
+        setTotalPages(1)
+        setError(error.message || 'Unable to load contribution opportunities.')
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoading(false)
+        }
+      }
+    }, 300)
 
-    const matchesBeginner =
-      !filters.beginner ||
-      issue.beginner
+    return () => {
+      clearTimeout(timer)
+      controller.abort()
+    }
+  }, [filters, search, sort, page])
+
+  const handlePageChange = nextPage => {
+    if (nextPage < 1 || nextPage > totalPages) return
+    setPage(nextPage)
+    window.scrollTo({top: 0, behavior: 'smooth'})
+  }
+
+  const renderSkeletons = () => (
+    <div className="flex flex-col gap-3">
+      {[1, 2, 3].map(item => (
+        <div
+          key={item}
+          className="w-full min-h-62 px-6 py-5 bg-white border border-gray-200 rounded-2xl animate-pulse"
+        >
+          <div className="flex gap-3">
+            <div className="size-11 rounded-lg bg-gray-200 shrink-0" />
+            <div className="flex-1">
+              <div className="w-40 h-4 bg-gray-200 rounded" />
+              <div className="w-3/4 h-5 mt-3 bg-gray-200 rounded" />
+              <div className="w-full h-3 mt-3 bg-gray-100 rounded" />
+              <div className="w-2/3 h-3 mt-2 bg-gray-100 rounded" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+
+  const renderPagination = () => {
+    if (totalPages <= 1) return null
+
+    const pages = []
+
+    if (totalPages <= 5) {
+      for (let index = 1; index <= totalPages; index += 1) {
+        pages.push(index)
+      }
+    } else {
+      pages.push(1)
+
+      if (page > 3) {
+        pages.push('...')
+      }
+
+      const start = Math.max(2, page - 1)
+      const end = Math.min(totalPages - 1, page + 1)
+
+      for (let index = start; index <= end; index += 1) {
+        pages.push(index)
+      }
+
+      if (page < totalPages - 2) {
+        pages.push('...')
+      }
+
+      pages.push(totalPages)
+    }
 
     return (
-      matchesSearch &&
-      matchesDifficulty &&
-      matchesLanguage &&
-      matchesTechnology &&
-      matchesActivity &&
-      matchesLabels &&
-      matchesType &&
-      matchesAssignment &&
-      matchesIssueAge &&
-      matchesDiscussion &&
-      matchesBeginner
+      <div className="flex items-center justify-center gap-2 mt-5">
+        <button
+          onClick={() => handlePageChange(page - 1)}
+          disabled={page === 1}
+          className="h-8 px-3 text-xs font-medium bg-white border border-gray-200 rounded-md hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          Previous
+        </button>
+
+        {pages.map((item, index) =>
+          item === '...' ? (
+            <span key={`ellipsis-${index}`} className="px-2 text-gray-400">
+              ...
+            </span>
+          ) : (
+            <button
+              key={item}
+              onClick={() => handlePageChange(item)}
+              className={`w-8 h-8 text-xs font-semibold rounded-md transition ${
+                item === page
+                  ? 'text-white bg-blue-500'
+                  : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              {item}
+            </button>
+          )
+        )}
+
+        <button
+          onClick={() => handlePageChange(page + 1)}
+          disabled={page === totalPages}
+          className="h-8 px-3 text-xs font-medium bg-white border border-gray-200 rounded-md hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          Next
+        </button>
+      </div>
     )
-  })
+  }
 
   return (
     <div className="flex-1 min-w-0">
-
       <div className="flex items-center justify-between mb-4">
-
         <div>
           <p className="text-sm font-semibold text-gray-900">
-            {filteredIssues.length === issues.length ? '512' : filteredIssues.length} opportunities found
+            {total} opportunities found
           </p>
 
           <p className="mt-1 text-xs text-gray-500">
-            Issues matched to your current filters
+            Real open-source issues matched to your current filters
           </p>
         </div>
 
         <div className="flex items-center gap-2">
-
-          <span className="text-xs text-gray-500">
+          <span className="hidden text-xs text-gray-500 sm:inline">
             Sort by:
           </span>
 
-          <select className="px-3 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-lg outline-none hover:border-gray-300">
+          <select
+            value={sort}
+            onChange={event => setSort(event.target.value)}
+            className="px-3 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-lg outline-none hover:border-gray-300"
+          >
             <option>Best match</option>
             <option>Recently opened</option>
             <option>Recently updated</option>
             <option>Most active</option>
             <option>Lowest difficulty</option>
           </select>
-
         </div>
-
       </div>
 
-      <div className="flex flex-col gap-3">
+      {loading && renderSkeletons()}
 
-        {filteredIssues.length > 0 ? (
-          filteredIssues.map(issue => (
-            <IssueCard
-              key={`${issue.repo}-${issue.number}`}
-              issue={issue}
-            />
-          ))
-        ) : (
-          <div className="p-10 text-center bg-white border border-gray-200 rounded-xl">
-            <p className="font-semibold text-gray-900">
-              No opportunities found
-            </p>
+      {!loading && error && (
+        <div className="p-8 text-center bg-white border border-red-200 rounded-xl">
+          <p className="font-semibold text-gray-900">
+            Couldn't load contribution opportunities
+          </p>
 
-            <p className="mt-2 text-sm text-gray-500">
-              Try changing your filters or search terms.
-            </p>
+          <p className="mt-2 text-sm text-gray-500">
+            {error}
+          </p>
+
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 mt-4 text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700"
+          >
+            Try again
+          </button>
+        </div>
+      )}
+
+      {!loading && !error && issues.length === 0 && (
+        <div className="p-10 text-center bg-white border border-gray-200 rounded-xl">
+          <p className="font-semibold text-gray-900">
+            No opportunities found
+          </p>
+
+          <p className="mt-2 text-sm text-gray-500">
+            Try changing your filters or search terms.
+          </p>
+        </div>
+      )}
+
+      {!loading && !error && issues.length > 0 && (
+        <>
+          <div className="flex flex-col gap-3">
+            {issues.map(issue => (
+              <IssueCard
+                key={`${issue.repo}-${issue.number}`}
+                issue={issue}
+              />
+            ))}
           </div>
-        )}
 
-      </div>
-
-      <div className="flex items-center justify-center gap-2 mt-5">
-
-        <button className="w-8 h-8 text-xs font-semibold text-white bg-blue-500 rounded-md">
-          1
-        </button>
-
-        <button className="w-8 h-8 text-xs bg-white border border-gray-200 rounded-md hover:bg-gray-50">
-          2
-        </button>
-
-        <button className="w-8 h-8 text-xs bg-white border border-gray-200 rounded-md hover:bg-gray-50">
-          3
-        </button>
-
-        <span className="px-2 text-gray-400">
-          ...
-        </span>
-
-        <button className="w-10 h-8 text-xs bg-white border border-gray-200 rounded-md hover:bg-gray-50">
-          11
-        </button>
-
-        <button className="h-8 px-3 text-xs font-medium bg-white border border-gray-200 rounded-md hover:bg-gray-50">
-          Next
-        </button>
-
-      </div>
-
+          {renderPagination()}
+        </>
+      )}
     </div>
   )
 }
