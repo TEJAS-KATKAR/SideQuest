@@ -1,67 +1,43 @@
-import React from 'react'
-import { useState } from 'react'
-import {Menu , Bell, Sun, ChevronDown } from 'lucide-react'
+import React, {useState} from 'react'
+import {Menu, Bell, Sun, ChevronDown} from 'lucide-react'
 import Profile from './profile'
 
-const TopBar = () => {
-    const [profileOpen, setProfileOpen] = useState(false)
-    const [sidebarOpen, setSidebarOpen] = useState(true)
-
-  const toggleSidebar = () => {
-    setSidebarOpen(prev => !prev)
-    window.dispatchEvent(new Event('toggleSidebar'))
-  }
+const TopBar = ({onMenuClick}) => {
+  const [profileOpen, setProfileOpen] = useState(false)
+  const [notificationsOpen, setNotificationsOpen] = useState(false)
 
   return (
-    <div className='w-full h-14 flex justify-between items-center px-10 shadow-sm bg-white'>
-        <div className='justify-center items-center'>
-            <button
-              onClick={toggleSidebar}
-              aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
-              title={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
-              className='group flex justify-center items-center p-2 rounded-lg cursor-pointer transition-all duration-200 hover:bg-gray-100 hover:scale-105 active:scale-90 active:bg-gray-200'
-            >
-              <Menu
-                className={`transition-transform duration-300 ease-in-out ${
-                  sidebarOpen ? 'rotate-0' : 'rotate-180'
-                }`}
-              />
-            </button>
-        </div>
-        <div className="flex justify-center items-center gap-5">
-            <Sun />
-            <Bell />
+    <div className="relative z-30 flex items-center justify-between w-full h-14 px-5 md:px-8 lg:px-10 bg-white shadow-sm">
+      <button onClick={onMenuClick} className="flex items-center justify-center p-1 rounded-md cursor-pointer hover:bg-gray-100 transition" aria-label="Toggle sidebar">
+        <Menu />
+      </button>
 
-            <button
-                onClick={() => setProfileOpen(!profileOpen)}
-                className={`flex gap-1 justify-center items-center rounded-full border px-2 py-1 cursor-pointer transition-all duration-200 ${
-                profileOpen
-                    ? 'border-gray-300 bg-gray-50 scale-95'
-                    : 'border-transparent hover:border-gray-400 hover:bg-gray-50 hover:scale-95 shadow-inner'
-                }`}
-            >
-            <div className="size-9 rounded-full bg-gray-400 flex justify-center items-center text-lg text-white font-semibold">
-              G
+      <div className="flex items-center justify-center gap-4 md:gap-5">
+        <button className="flex items-center justify-center p-1 rounded-md cursor-pointer hover:bg-gray-100 transition" aria-label="Light theme">
+          <Sun />
+        </button>
+
+        <button onClick={() => setNotificationsOpen(prev => !prev)} className="relative flex items-center justify-center p-1 rounded-md cursor-pointer hover:bg-gray-100 transition" aria-label="Notifications">
+          <Bell />
+          {notificationsOpen && (
+            <div className="absolute right-0 top-10 w-72 p-4 text-left bg-white border border-gray-200 rounded-xl shadow-lg">
+              <h2 className="text-sm font-semibold text-gray-900">Notifications</h2>
+              <p className="mt-2 text-sm text-gray-500">You're all caught up. New SideQuest activity will appear here.</p>
             </div>
+          )}
+        </button>
 
-            <span className="text-md font-semibold">
-              Guest
-            </span>
+        <button
+          onClick={() => setProfileOpen(!profileOpen)}
+          className={`flex gap-1 justify-center items-center rounded-full border px-2 py-1 cursor-pointer transition-all duration-200 ${profileOpen ? 'border-gray-300 bg-gray-50 scale-95' : 'border-transparent hover:border-gray-400 hover:bg-gray-50 hover:scale-95 shadow-inner'}`}
+        >
+          <div className="flex items-center justify-center size-9 rounded-full bg-gray-400 text-lg font-semibold text-white">G</div>
+          <span className="hidden text-md font-semibold sm:inline">Guest</span>
+          <ChevronDown size={18} className={`transition-transform duration-200 ${profileOpen ? 'rotate-180' : ''}`} />
+        </button>
+      </div>
 
-            <ChevronDown
-              size={18}
-              className={`transition-transform duration-200 ${
-                profileOpen ? 'rotate-180' : ''
-              }`}
-            />
-          </button>
-
-        </div>
-
-
-      {profileOpen && (
-        <Profile onClose={() => setProfileOpen(false)} />
-      )}
+      {profileOpen && <Profile onClose={() => setProfileOpen(false)} />}
     </div>
   )
 }

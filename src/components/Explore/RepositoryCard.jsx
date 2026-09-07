@@ -2,7 +2,7 @@ import React, {useState} from 'react'
 import {Bookmark, ExternalLink, GitFork, Star, Eye} from 'lucide-react'
 import {useNavigate} from 'react-router-dom'
 
-const formatNumber = (number) => {
+const formatNumber = number => {
   const value = Number(number) || 0
 
   if (value >= 1000000) {
@@ -20,12 +20,18 @@ const RepositoryCard = ({repo}) => {
   const [saved, setSaved] = useState(false)
   const navigate = useNavigate()
 
-  const owner = repo.owner || repo.name?.split('/')[0]
-  const repositoryName = repo.repo || repo.name?.split('/')[1]
+  const owner = repo.owner || repo.fullName?.split('/')[0] || ''
+  const repositoryName = repo.repo || repo.name || repo.fullName?.split('/')[1] || ''
+  const displayName = repo.fullName || `${owner}/${repositoryName}`
 
   const stars = Number(repo.stars) || 0
   const forks = Number(repo.forks) || 0
   const watchers = Number(repo.watchers) || 0
+
+  const openRepository = () => {
+    if (!owner || !repositoryName) return
+    navigate(`/repository/${owner}/${repositoryName}`)
+  }
 
   return (
     <div className="p-5 bg-white border border-gray-200 rounded-xl hover:border-indigo-300 hover:shadow-md transition">
@@ -35,7 +41,7 @@ const RepositoryCard = ({repo}) => {
         <div className="flex items-start flex-1 min-w-0 gap-4">
 
           <div className={`flex items-center justify-center w-12 h-12 shrink-0 rounded-xl text-xl font-bold ${repo.iconBg || 'bg-gray-100'} ${repo.iconColor || 'text-gray-900'}`}>
-            {repo.icon || repositoryName?.charAt(0).toUpperCase()}
+            {repo.icon || repositoryName.charAt(0).toUpperCase()}
           </div>
 
           <div className="min-w-0">
@@ -43,10 +49,10 @@ const RepositoryCard = ({repo}) => {
             <div className="flex items-center gap-2">
 
               <button
-                onClick={() => navigate(`/repository/${owner}/${repositoryName}`)}
+                onClick={openRepository}
                 className="text-lg font-semibold text-left text-gray-900 hover:text-indigo-600 hover:underline"
               >
-                {repo.name}
+                {displayName}
               </button>
 
               {repo.verified && (
@@ -68,7 +74,7 @@ const RepositoryCard = ({repo}) => {
                 {repo.language || 'Unknown'}
               </span>
 
-              {(repo.topics || []).map((topic) => (
+              {(repo.topics || []).map(topic => (
                 <button
                   key={topic}
                   className="px-2.5 py-1 text-xs font-medium text-indigo-600 bg-indigo-50 rounded-full hover:bg-indigo-100 transition"
@@ -92,7 +98,7 @@ const RepositoryCard = ({repo}) => {
         <div className="flex items-center gap-2 shrink-0">
 
           <button
-            onClick={() => navigate(`/repository/${owner}/${repositoryName}`)}
+            onClick={openRepository}
             className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50 transition"
           >
             View repo
@@ -101,11 +107,7 @@ const RepositoryCard = ({repo}) => {
 
           <button
             onClick={() => setSaved(!saved)}
-            className={`flex items-center justify-center w-9 h-9 border rounded-lg transition ${
-              saved
-                ? 'text-indigo-600 bg-indigo-50 border-indigo-300'
-                : 'text-gray-500 border-gray-300 hover:text-indigo-600 hover:bg-indigo-50 hover:border-indigo-300'
-            }`}
+            className={`flex items-center justify-center w-9 h-9 border rounded-lg transition ${saved ? 'text-indigo-600 bg-indigo-50 border-indigo-300' : 'text-gray-500 border-gray-300 hover:text-indigo-600 hover:bg-indigo-50 hover:border-indigo-300'}`}
           >
             <Bookmark className={`size-4 ${saved ? 'fill-current' : ''}`} />
           </button>
@@ -141,7 +143,7 @@ const RepositoryCard = ({repo}) => {
         </span>
 
         <span className="text-gray-400">
-          Updated {repo.updated ? new Date(repo.updated).toLocaleDateString() : 'Unknown'}
+          Updated {repo.updatedAt ? new Date(repo.updatedAt).toLocaleDateString() : 'Unknown'}
         </span>
 
         <span className="flex items-center gap-1.5 ml-auto">
@@ -150,7 +152,9 @@ const RepositoryCard = ({repo}) => {
             className={`w-2 h-2 rounded-full ${
               repo.activity === 'Archived'
                 ? 'bg-gray-400'
-                : 'bg-green-500'
+                : repo.activity === 'Low activity'
+                  ? 'bg-gray-400'
+                  : 'bg-green-500'
             }`}
           ></span>
 

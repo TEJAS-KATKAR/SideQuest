@@ -11,76 +11,74 @@ app.use(express.json())
 const githubHeaders = {
   Accept: 'application/vnd.github+json',
   'X-GitHub-Api-Version': '2022-11-28',
+  'User-Agent': 'SideQuest',
   ...(process.env.GITHUB_TOKEN
     ? {Authorization: `Bearer ${process.env.GITHUB_TOKEN}`}
     : {})
 }
 
-/*
-  SideQuest display name → GitHub topic slug
+const cache = new Map()
+const CACHE_TIME = 30 * 1000
 
-  The user sees the friendly name in the UI,
-  but GitHub receives the actual topic name.
-*/
 const technologyTopicMap = {
-  'React': 'react',
+  React: 'react',
   'Next.js': 'nextjs',
-  'Vue': 'vue',
-  'Angular': 'angular',
+  Vue: 'vue',
+  Angular: 'angular',
   'Node.js': 'nodejs',
-  'Express': 'express',
+  Express: 'express',
   'React Native': 'react-native',
-  'Frontend': 'frontend',
-  'Backend': 'backend',
+  Frontend: 'frontend',
+  Backend: 'backend',
   'Web Development': 'web-development',
   'Tailwind CSS': 'tailwindcss',
-  'Bootstrap': 'bootstrap',
-  'Svelte': 'svelte',
-  'Astro': 'astro',
-  'MongoDB': 'mongodb',
-  'PostgreSQL': 'postgresql',
-  'MySQL': 'mysql',
-  'SQLite': 'sqlite',
-  'Redis': 'redis',
-  'Firebase': 'firebase',
-  'Supabase': 'supabase',
-  'GraphQL': 'graphql',
+  Bootstrap: 'bootstrap',
+  Svelte: 'svelte',
+  Astro: 'astro',
+  MongoDB: 'mongodb',
+  PostgreSQL: 'postgresql',
+  MySQL: 'mysql',
+  SQLite: 'sqlite',
+  Redis: 'redis',
+  Firebase: 'firebase',
+  Supabase: 'supabase',
+  GraphQL: 'graphql',
   'REST API': 'rest-api',
-  'Database': 'database',
-  'AI': 'artificial-intelligence',
+  Database: 'database',
+  AI: 'artificial-intelligence',
   'Artificial Intelligence': 'artificial-intelligence',
   'Machine Learning': 'machine-learning',
   'Deep Learning': 'deep-learning',
-  'LLM': 'llm',
-  'NLP': 'nlp',
+  LLM: 'llm',
+  NLP: 'nlp',
   'Computer Vision': 'computer-vision',
   'Data Science': 'data-science',
   'Data Analytics': 'data-analytics',
-  'TensorFlow': 'tensorflow',
-  'PyTorch': 'pytorch',
-  'Pandas': 'pandas',
+  TensorFlow: 'tensorflow',
+  PyTorch: 'pytorch',
+  Pandas: 'pandas',
   'Power BI': 'power-bi',
-  'Tableau': 'tableau',
-  'Docker': 'docker',
-  'Kubernetes': 'kubernetes',
-  'AWS': 'aws',
-  'Azure': 'azure',
+  Tableau: 'tableau',
+  Docker: 'docker',
+  Kubernetes: 'kubernetes',
+  AWS: 'aws',
+  Azure: 'azure',
   'Google Cloud': 'google-cloud',
-  'Terraform': 'terraform',
+  Terraform: 'terraform',
   'CI/CD': 'continuous-integration',
-  'DevOps': 'devops',
-  'Cybersecurity': 'cybersecurity',
+  DevOps: 'devops',
+  Cybersecurity: 'cybersecurity',
   'Game Development': 'game-development',
-  'Blockchain': 'blockchain',
-  'DevTools': 'devtools',
-  'CLI': 'cli',
-  'Testing': 'testing',
-  'Education': 'education',
+  Blockchain: 'blockchain',
+  DevTools: 'devtools',
+  CLI: 'cli',
+  Testing: 'testing',
+  Education: 'education',
   'Open Source': 'open-source',
-  'Mobile': 'mobile'
+  Mobile: 'mobile'
 }
 
-const convertTechnologyToTopic = (technology) => {
+const convertTechnologyToTopic = technology => {
   if (technologyTopicMap[technology]) {
     return technologyTopicMap[technology]
   }
@@ -93,9 +91,34 @@ const convertTechnologyToTopic = (technology) => {
     .replace(/^-|-$/g, '')
 }
 
-const formatRepository = (repo) => ({
+const getActivity = pushedAt => {
+  if (!pushedAt) {
+    return 'Unknown'
+  }
+
+  const daysSincePush = Math.floor(
+    (Date.now() - new Date(pushedAt).getTime()) / 86400000
+  )
+
+  if (daysSincePush <= 7) {
+    return 'Very active'
+  }
+
+  if (daysSincePush <= 30) {
+    return 'Active'
+  }
+
+  if (daysSincePush <= 90) {
+    return 'Moderately active'
+  }
+
+  return 'Low activity'
+}
+
+const formatRepository = repo => ({
   id: repo.id,
-  name: repo.full_name,
+  name: repo.name || '',
+  fullName: repo.full_name || '',
   owner: repo.owner?.login || '',
   repo: repo.name || '',
   description: repo.description || 'No description available.',
@@ -103,16 +126,27 @@ const formatRepository = (repo) => ({
   forks: repo.forks_count || 0,
   watchers: repo.watchers_count || 0,
   language: repo.language || 'Unknown',
-  topics: repo.topics || [],
-  license: repo.license?.spdx_id || repo.license?.name || '',
+  topics: Array.isArray(repo.topics) ? repo.topics : [],
+  license: repo.license?.spdx_id || repo.license?.name || 'Not specified',
   updatedAt: repo.updated_at || null,
   pushedAt: repo.pushed_at || null,
+  createdAt: repo.created_at || null,
   archived: repo.archived || false,
   htmlUrl: repo.html_url || '',
-  avatarUrl: repo.owner?.avatar_url || ''
+  avatarUrl: repo.owner?.avatar_url || '',
+  defaultBranch: repo.default_branch || 'main',
+  openIssues: repo.open_issues_count || 0,
+  homepage: repo.homepage || '',
+  activity: repo.archived ? 'Archived' : getActivity(repo.pushed_at)
 })
 
-const githubRequest = async (url) => {
+const githubRequest = async url => {
+  const cached = cache.get(url)
+
+  if (cached && Date.now() - cached.time < CACHE_TIME) {
+    return cached.data
+  }
+
   const response = await fetch(url, {
     headers: githubHeaders
   })
@@ -126,19 +160,21 @@ const githubRequest = async (url) => {
 
     error.status = response.status
     error.githubData = data
+    error.remaining = response.headers.get('x-ratelimit-remaining')
+    error.limit = response.headers.get('x-ratelimit-limit')
+    error.reset = response.headers.get('x-ratelimit-reset')
 
     throw error
   }
 
+  cache.set(url, {
+    time: Date.now(),
+    data
+  })
+
   return data
 }
 
-/*
-  Build the GitHub repository search query.
-
-  Important:
-  Technologies are converted to real GitHub topic slugs here.
-*/
 const buildSearchQuery = ({
   search,
   languages,
@@ -150,7 +186,6 @@ const buildSearchQuery = ({
   beginner
 }) => {
   const queryParts = []
-
   const cleanSearch = (search || '').trim()
 
   if (cleanSearch && cleanSearch !== 'open source') {
@@ -165,8 +200,7 @@ const buildSearchQuery = ({
 
   if (topics?.length) {
     topics.forEach(topic => {
-      const githubTopic = convertTechnologyToTopic(topic)
-      queryParts.push(`topic:${githubTopic}`)
+      queryParts.push(`topic:${convertTechnologyToTopic(topic)}`)
     })
   }
 
@@ -207,7 +241,7 @@ const buildSearchQuery = ({
   }
 
   if (queryParts.length === 0) {
-    queryParts.push('stars:>0')
+    queryParts.push('stars:>10000')
   }
 
   return queryParts.join(' ')
@@ -216,17 +250,32 @@ const buildSearchQuery = ({
 app.get('/api/test', (req, res) => {
   res.json({
     success: true,
-    message: 'SideQuest backend is working!'
+    message: 'SideQuest backend is working!',
+    authenticated: Boolean(process.env.GITHUB_TOKEN)
   })
 })
 
-/*
-  Repository search
-*/
+app.get('/api/github-status', async (req, res) => {
+  try {
+    const data = await githubRequest('https://api.github.com/rate_limit')
+
+    res.json({
+      authenticated: Boolean(process.env.GITHUB_TOKEN),
+      core: data.resources?.core || null,
+      search: data.resources?.search || null
+    })
+  } catch (error) {
+    res.status(error.status || 500).json({
+      authenticated: Boolean(process.env.GITHUB_TOKEN),
+      error: error.message || 'Unable to check GitHub status'
+    })
+  }
+})
+
 app.get('/api/repositories/search', async (req, res) => {
   try {
     const {
-      q = 'open source',
+      q = '',
       page = '1',
       per_page = '10',
       language,
@@ -270,22 +319,23 @@ app.get('/api/repositories/search', async (req, res) => {
     const params = new URLSearchParams({
       q: searchQuery,
       page: String(currentPage),
-      per_page: String(perPage)
+      per_page: String(perPage),
+      sort: sortMetric || 'stars',
+      order: sortOrder === 'asc' ? 'asc' : 'desc'
     })
-
-    if (sortMetric) {
-      params.set('sort', sortMetric)
-      params.set('order', sortOrder === 'asc' ? 'asc' : 'desc')
-    } else {
-      params.set('sort', 'stars')
-      params.set('order', 'desc')
-    }
 
     const data = await githubRequest(
       `https://api.github.com/search/repositories?${params.toString()}`
     )
 
-    const repositories = (data.items || []).map(formatRepository)
+    let repositories = (data.items || []).map(formatRepository)
+
+    if (watchers) {
+      const minimumWatchers = Number(watchers) || 0
+      repositories = repositories.filter(
+        repository => repository.watchers >= minimumWatchers
+      )
+    }
 
     res.json({
       repositories,
@@ -297,18 +347,18 @@ app.get('/api/repositories/search', async (req, res) => {
   } catch (error) {
     console.error('Repository search error:', error)
 
-    const status = error.status || 500
-
-    res.status(status).json({
+    res.status(error.status || 500).json({
       error: error.message || 'Failed to search repositories',
-      github: error.githubData || null
+      github: error.githubData || null,
+      rateLimit: {
+        limit: error.limit || null,
+        remaining: error.remaining || null,
+        reset: error.reset || null
+      }
     })
   }
 })
 
-/*
-  Repository details
-*/
 app.get('/api/repositories/:owner/:repo', async (req, res) => {
   try {
     const {owner, repo} = req.params
@@ -317,21 +367,21 @@ app.get('/api/repositories/:owner/:repo', async (req, res) => {
       `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`
     )
 
-    res.json({
-      repository: formatRepository(data)
-    })
+    res.json(formatRepository(data))
   } catch (error) {
     console.error('Repository details error:', error)
 
     res.status(error.status || 500).json({
-      error: error.message || 'Failed to fetch repository'
+      error: error.message || 'Failed to fetch repository',
+      rateLimit: {
+        limit: error.limit || null,
+        remaining: error.remaining || null,
+        reset: error.reset || null
+      }
     })
   }
 })
 
-/*
-  Repository languages
-*/
 app.get('/api/repositories/:owner/:repo/languages', async (req, res) => {
   try {
     const {owner, repo} = req.params
@@ -340,7 +390,16 @@ app.get('/api/repositories/:owner/:repo/languages', async (req, res) => {
       `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/languages`
     )
 
-    res.json(data)
+    const total = Object.values(data).reduce((sum, value) => sum + value, 0)
+
+    const languages = Object.entries(data)
+      .map(([name, bytes]) => ({
+        name,
+        percentage: total ? ((bytes / total) * 100).toFixed(1) : '0'
+      }))
+      .sort((a, b) => Number(b.percentage) - Number(a.percentage))
+
+    res.json(languages)
   } catch (error) {
     console.error('Repository languages error:', error)
 
@@ -350,9 +409,6 @@ app.get('/api/repositories/:owner/:repo/languages', async (req, res) => {
   }
 })
 
-/*
-  Repository releases
-*/
 app.get('/api/repositories/:owner/:repo/releases', async (req, res) => {
   try {
     const {owner, repo} = req.params
@@ -361,9 +417,15 @@ app.get('/api/repositories/:owner/:repo/releases', async (req, res) => {
       `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/releases?per_page=10`
     )
 
-    res.json({
-      releases: data || []
-    })
+    res.json(
+      (data || []).map(release => ({
+        name: release.name || release.tag_name || 'Untitled release',
+        tag: release.tag_name || '',
+        publishedAt: release.published_at || release.created_at || null,
+        prerelease: release.prerelease || false,
+        url: release.html_url || ''
+      }))
+    )
   } catch (error) {
     console.error('Repository releases error:', error)
 
@@ -373,9 +435,6 @@ app.get('/api/repositories/:owner/:repo/releases', async (req, res) => {
   }
 })
 
-/*
-  Repository commits
-*/
 app.get('/api/repositories/:owner/:repo/commits', async (req, res) => {
   try {
     const {owner, repo} = req.params
@@ -384,21 +443,22 @@ app.get('/api/repositories/:owner/:repo/commits', async (req, res) => {
       `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/commits?per_page=10`
     )
 
-    res.json({
-      commits: data || []
-    })
+    res.json(
+      (data || []).map(commit => ({
+        message: commit.commit?.message || 'No commit message',
+        date: commit.commit?.author?.date || commit.commit?.committer?.date || null,
+        url: commit.html_url || ''
+      }))
+    )
   } catch (error) {
     console.error('Repository commits error:', error)
 
     res.status(error.status || 500).json({
-      error: error.message || 'Failed to fetch commits'
+      error: error.message || 'Failed to fetch repository commits'
     })
   }
 })
 
-/*
-  Repository contributors
-*/
 app.get('/api/repositories/:owner/:repo/contributors', async (req, res) => {
   try {
     const {owner, repo} = req.params
@@ -408,13 +468,14 @@ app.get('/api/repositories/:owner/:repo/contributors', async (req, res) => {
     )
 
     res.json({
+      count: (data || []).length,
       contributors: data || []
     })
   } catch (error) {
     console.error('Repository contributors error:', error)
 
     res.status(error.status || 500).json({
-      error: error.message || 'Failed to fetch contributors'
+      error: error.message || 'Failed to fetch repository contributors'
     })
   }
 })

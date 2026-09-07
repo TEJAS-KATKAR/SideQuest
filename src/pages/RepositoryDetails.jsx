@@ -18,57 +18,79 @@ const RepositoryDetails = () => {
   const [error, setError] = useState('')
 
   useEffect(() => {
+    let cancelled = false
+
+    const fetchJson = async url => {
+      const response = await fetch(url)
+      const data = await response.json().catch(() => null)
+
+      if (!response.ok) {
+        throw new Error(data?.error || 'GitHub request failed')
+      }
+
+      return data
+    }
+
     const fetchRepositoryData = async () => {
       try {
         setLoading(true)
         setError('')
 
-        const [
-          repositoryResponse,
-          languagesResponse,
-          releasesResponse,
-          commitsResponse,
-          contributorsResponse
-        ] = await Promise.all([
-          fetch(`http://localhost:5000/api/repositories/${owner}/${repo}`),
-          fetch(`http://localhost:5000/api/repositories/${owner}/${repo}/languages`),
-          fetch(`http://localhost:5000/api/repositories/${owner}/${repo}/releases`),
-          fetch(`http://localhost:5000/api/repositories/${owner}/${repo}/commits`),
-          fetch(`http://localhost:5000/api/repositories/${owner}/${repo}/contributors`)
-        ])
+        const baseUrl = `http://localhost:5000/api/repositories/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`
 
-        if (!repositoryResponse.ok) {
-          throw new Error('Repository not found')
-        }
+        const repositoryData = await fetchJson(baseUrl)
 
-        const repositoryData = await repositoryResponse.json()
+        if (cancelled) return
 
         setRepository(repositoryData)
 
-        if (languagesResponse.ok) {
-          setLanguages(await languagesResponse.json())
+        const results = await Promise.allSettled([
+          fetchJson(`${baseUrl}/languages`),
+          fetchJson(`${baseUrl}/releases`),
+          fetchJson(`${baseUrl}/commits`),
+          fetchJson(`${baseUrl}/contributors`)
+        ])
+
+        if (cancelled) return
+
+        if (results[0].status === 'fulfilled') {
+          setLanguages(Array.isArray(results[0].value) ? results[0].value : [])
         }
 
-        if (releasesResponse.ok) {
-          setReleases(await releasesResponse.json())
+        if (results[1].status === 'fulfilled') {
+          setReleases(Array.isArray(results[1].value) ? results[1].value : [])
         }
 
-        if (commitsResponse.ok) {
-          setCommits(await commitsResponse.json())
+        if (results[2].status === 'fulfilled') {
+          setCommits(Array.isArray(results[2].value) ? results[2].value : [])
         }
 
-        if (contributorsResponse.ok) {
-          setContributors(await contributorsResponse.json())
+        if (results[3].status === 'fulfilled') {
+          const contributorData = results[3].value
+
+          setContributors({
+            count: contributorData?.count || 0,
+            contributors: contributorData?.contributors || []
+          })
         }
       } catch (error) {
-        console.error(error)
-        setError(error.message)
+        if (cancelled) return
+
+        console.error('Repository details error:', error)
+        setRepository(null)
+        setError(error.message || 'Unable to load repository.')
       } finally {
-        setLoading(false)
+        if (!cancelled) {
+          setLoading(false)
+        }
       }
     }
 
     fetchRepositoryData()
+
+    return () => {
+      cancelled = true
+    }
   }, [owner, repo])
 
   const cloneCommand = `git clone https://github.com/${owner}/${repo}.git`
@@ -93,13 +115,21 @@ function Counter() {
 
   const tabs = ['Overview', 'README', 'Setup', 'Issues', 'Contributions']
 
-  const formatNumber = (number) => {
-    if (number >= 1000000) return `${(number / 1000000).toFixed(1)}m`
-    if (number >= 1000) return `${(number / 1000).toFixed(1)}k`
-    return number
+  const formatNumber = number => {
+    const value = Number(number) || 0
+
+    if (value >= 1000000) {
+      return `${(value / 1000000).toFixed(1).replace('.0', '')}m`
+    }
+
+    if (value >= 1000) {
+      return `${(value / 1000).toFixed(1).replace('.0', '')}k`
+    }
+
+    return value
   }
 
-  const formatDate = (date) => {
+  const formatDate = date => {
     if (!date) return 'Unknown'
 
     return new Date(date).toLocaleDateString('en-US', {
@@ -182,7 +212,7 @@ function Counter() {
     )
   }
 
-  const githubUrl = repository.url
+  const githubUrl = repository.htmlUrl
   const repositoryName = repository.fullName || `${repository.owner}/${repository.name}`
   const activity = getActivity()
 
@@ -190,9 +220,7 @@ function Counter() {
     <div className="px-8 py-5">
 
       <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
-        <button onClick={() => navigate('/explore')} className="text-indigo-600 font-medium hover:text-indigo-800 transition">
-          Explore
-        </button>
+        <button onClick={() => navigate('/explore')} className="text-indigo-600 font-medium hover:text-indigo-800 transition">Explore</button>
         <ChevronRight size={15}/>
         <span>{repository.owner}</span>
         <ChevronRight size={15}/>
@@ -204,7 +232,7 @@ function Counter() {
         <div className="flex items-center gap-4">
           <div className="w-20 h-20 rounded-full bg-[#111b2f] flex items-center justify-center text-white shrink-0">
             <span className="text-3xl font-bold">
-              {repository.name.charAt(0).toUpperCase()}
+              {(repository.name || '?').charAt(0).toUpperCase()}
             </span>
           </div>
 
@@ -300,7 +328,7 @@ function Counter() {
       </div>
 
       <div className="flex items-center gap-1 mt-5 border-b border-gray-200">
-        {tabs.map((tab) => (
+        {tabs.map(tab => (
           <button key={tab} onClick={() => setActiveTab(tab)} className={`flex items-center gap-2 px-5 py-3 text-sm font-medium transition border-b-2 ${activeTab === tab ? 'text-indigo-600 border-indigo-600' : 'text-gray-500 border-transparent hover:text-gray-900'}`}>
             {tab === 'Overview' && <BookOpen size={15}/>}
             {tab === 'README' && <BookOpen size={15}/>}
@@ -341,7 +369,7 @@ function Counter() {
 
               <div className="flex flex-col gap-4 mt-4">
 
-                {repository.language && (
+                {repository.language && repository.language !== 'Unknown' && (
                   <div className="flex items-center gap-3">
                     <span className="w-8 h-8 rounded bg-yellow-100 text-yellow-700 flex items-center justify-center text-sm font-bold">
                       {repository.language.slice(0, 2).toUpperCase()}
@@ -350,16 +378,14 @@ function Counter() {
                   </div>
                 )}
 
-                {repository.topics.slice(0, 2).map((topic) => (
+                {repository.topics.slice(0, 2).map(topic => (
                   <div key={topic} className="flex items-center gap-3">
-                    <span className="w-8 h-8 rounded bg-indigo-100 text-indigo-600 flex items-center justify-center text-sm font-bold">
-                      #
-                    </span>
+                    <span className="w-8 h-8 rounded bg-indigo-100 text-indigo-600 flex items-center justify-center text-sm font-bold">#</span>
                     <span className="text-sm font-medium">{topic}</span>
                   </div>
                 ))}
 
-                {!repository.language && repository.topics.length === 0 && (
+                {(!repository.language || repository.language === 'Unknown') && repository.topics.length === 0 && (
                   <p className="text-sm text-gray-500">No technology information available.</p>
                 )}
 
@@ -371,7 +397,7 @@ function Counter() {
 
               <div className="flex flex-wrap gap-2 mt-4">
                 {repository.topics.length > 0 ? (
-                  repository.topics.map((topic) => (
+                  repository.topics.map(topic => (
                     <span key={topic} className="px-2.5 py-1.5 rounded-lg bg-indigo-50 text-indigo-600 text-xs">
                       {topic}
                     </span>
@@ -394,7 +420,7 @@ function Counter() {
 
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xl">{repository.name.charAt(0).toUpperCase()}</span>
+                  <span className="text-xl">{(repository.name || '?').charAt(0).toUpperCase()}</span>
                   <h2 className="text-2xl font-bold text-gray-900">{repository.name}</h2>
                 </div>
 
@@ -692,7 +718,7 @@ function Counter() {
             <div className="flex flex-col gap-4 mt-5">
 
               {languages.length > 0 ? (
-                languages.slice(0, 5).map((language) => (
+                languages.slice(0, 5).map(language => (
                   <div key={language.name}>
 
                     <div className="flex items-center justify-between text-xs">
