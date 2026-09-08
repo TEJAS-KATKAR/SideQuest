@@ -5,8 +5,14 @@ const difficultyRank = {
     Hard: 4
   }
   
+  const normalizeLabels = labels =>
+    (labels || [])
+      .map(label => typeof label === 'string' ? label : label?.name)
+      .filter(Boolean)
+      .map(label => label.toLowerCase().trim())
+  
   const getDifficulty = ({labels, comments, body, type, assignment, ageDays}) => {
-    const normalizedLabels = labels.map(label => label.toLowerCase())
+    const normalizedLabels = normalizeLabels(labels)
     const text = `${type} ${body || ''}`.toLowerCase()
   
     if (
@@ -45,61 +51,53 @@ const difficultyRank = {
   }
   
   const getIssueType = labels => {
-    const normalizedLabels = labels.map(label => label.toLowerCase())
+    const normalizedLabels = normalizeLabels(labels)
   
-    if (normalizedLabels.some(label => ['bug', 'bugfix', 'type: bug'].includes(label))) {
+    if (normalizedLabels.some(label =>
+      ['bug', 'bugfix', 'type: bug'].includes(label)
+    )) {
       return 'Bug fix'
     }
   
-    if (
-      normalizedLabels.some(label =>
-        ['documentation', 'docs', 'good documentation'].includes(label)
-      )
-    ) {
+    if (normalizedLabels.some(label =>
+      ['documentation', 'docs', 'good documentation'].includes(label)
+    )) {
       return 'Documentation'
     }
   
-    if (
-      normalizedLabels.some(label =>
-        ['testing', 'tests', 'test'].includes(label)
-      )
-    ) {
+    if (normalizedLabels.some(label =>
+      ['testing', 'tests', 'test'].includes(label)
+    )) {
       return 'Testing'
     }
   
-    if (normalizedLabels.some(label => ['refactor', 'refactoring'].includes(label))) {
+    if (normalizedLabels.some(label =>
+      ['refactor', 'refactoring'].includes(label)
+    )) {
       return 'Refactor'
     }
   
-    if (
-      normalizedLabels.some(label =>
-        ['performance', 'perf', 'optimization'].includes(label)
-      )
-    ) {
+    if (normalizedLabels.some(label =>
+      ['performance', 'perf', 'optimization'].includes(label)
+    )) {
       return 'Performance'
     }
   
-    if (
-      normalizedLabels.some(label =>
-        ['accessibility', 'a11y'].includes(label)
-      )
-    ) {
+    if (normalizedLabels.some(label =>
+      ['accessibility', 'a11y'].includes(label)
+    )) {
       return 'Accessibility'
     }
   
-    if (
-      normalizedLabels.some(label =>
-        ['security', 'vulnerability'].includes(label)
-      )
-    ) {
+    if (normalizedLabels.some(label =>
+      ['security', 'vulnerability'].includes(label)
+    )) {
       return 'Security'
     }
   
-    if (
-      normalizedLabels.some(label =>
-        ['enhancement', 'feature', 'feature request'].includes(label)
-      )
-    ) {
+    if (normalizedLabels.some(label =>
+      ['enhancement', 'feature', 'feature request'].includes(label)
+    )) {
       return 'Feature'
     }
   
@@ -120,6 +118,8 @@ const difficultyRank = {
   }
   
   const getIssueAge = createdAt => {
+    if (!createdAt) return 'Last 90 days'
+  
     const days = Math.floor(
       (Date.now() - new Date(createdAt).getTime()) / 86400000
     )
@@ -138,7 +138,7 @@ const difficultyRank = {
   }
   
   const getScope = ({body, labels}) => {
-    const normalizedLabels = labels.map(label => label.toLowerCase())
+    const normalizedLabels = normalizeLabels(labels)
   
     if (
       normalizedLabels.includes('good first issue') ||
@@ -161,7 +161,7 @@ const difficultyRank = {
     ageDays,
     activity
   }) => {
-    const normalizedLabels = labels.map(label => label.toLowerCase())
+    const normalizedLabels = normalizeLabels(labels)
     const reasons = []
   
     if (
@@ -218,14 +218,22 @@ const difficultyRank = {
   }
   
   const analyzeContribution = issue => {
-    const labels = issue.labels || []
+    const labels = normalizeLabels(issue.labels)
     const comments = Number(issue.comments) || 0
     const body = issue.body || ''
     const assignment = issue.assignees?.length ? 'Assigned' : 'Unassigned'
-    const ageDays = Math.max(
-      0,
-      Math.floor((Date.now() - new Date(issue.created_at).getTime()) / 86400000)
-    )
+  
+    const createdAt = issue.created_at || issue.createdAt
+  
+    const ageDays = createdAt
+      ? Math.max(
+          0,
+          Math.floor(
+            (Date.now() - new Date(createdAt).getTime()) / 86400000
+          )
+        )
+      : 0
+  
     const type = getIssueType(labels)
     const activity = getActivity(issue.repository?.pushed_at)
     const difficulty = getDifficulty({
@@ -242,7 +250,7 @@ const difficultyRank = {
       type,
       activity,
       assignment,
-      issueAge: getIssueAge(issue.created_at),
+      issueAge: getIssueAge(createdAt),
       discussion: getDiscussion(comments),
       scope: getScope({body, labels}),
       reasons: getReasons({

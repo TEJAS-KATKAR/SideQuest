@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react'
+import React, {useState} from 'react'
 import ContributionHeader from '../components/Contributions/ContributionHeader'
 import IssueList from '../components/Contributions/IssueList'
 import ContributionSidebar from '../components/Contributions/ContributionSidebar'
@@ -17,42 +17,11 @@ const defaultFilters = {
 }
 
 const Contributions = () => {
-  const [search, setSearch] = useState(() => {
-    return sessionStorage.getItem('sidequest-contribution-search') || ''
-  })
-
-  const [filters, setFilters] = useState(() => {
-    try {
-      const savedFilters = sessionStorage.getItem('sidequest-contribution-filters')
-
-      if (!savedFilters) {
-        return defaultFilters
-      }
-
-      return {
-        ...defaultFilters,
-        ...JSON.parse(savedFilters)
-      }
-    } catch {
-      return defaultFilters
-    }
-  })
-
+  const [search, setSearch] = useState('')
+  const [submittedSearch, setSubmittedSearch] = useState('')
+  const [filters, setFilters] = useState(defaultFilters)
+  const [mobileDraftFilters, setMobileDraftFilters] = useState(defaultFilters)
   const [filterOpen, setFilterOpen] = useState(false)
-
-  useEffect(() => {
-    sessionStorage.setItem(
-      'sidequest-contribution-filters',
-      JSON.stringify(filters)
-    )
-  }, [filters])
-
-  useEffect(() => {
-    sessionStorage.setItem(
-      'sidequest-contribution-search',
-      search
-    )
-  }, [search])
 
   const filterCount =
     (filters.language?.length || 0) +
@@ -66,6 +35,20 @@ const Contributions = () => {
     (filters.discussion !== 'All' ? 1 : 0) +
     (filters.beginner ? 1 : 0)
 
+  const handleSearch = () => {
+    setSubmittedSearch(search.trim())
+  }
+
+  const openMobileFilters = () => {
+    setMobileDraftFilters(filters)
+    setFilterOpen(true)
+  }
+
+  const applyMobileFilters = () => {
+    setFilters(mobileDraftFilters)
+    setFilterOpen(false)
+  }
+
   return (
     <div className="px-8 py-6">
       <div className="flex items-start gap-6">
@@ -73,14 +56,15 @@ const Contributions = () => {
           <ContributionHeader
             search={search}
             setSearch={setSearch}
+            onSearch={handleSearch}
             filterCount={filterCount}
-            onFilterClick={() => setFilterOpen(true)}
+            onFilterClick={openMobileFilters}
           />
 
           <div className="mt-5">
             <IssueList
+              search={submittedSearch}
               filters={filters}
-              search={search}
             />
           </div>
         </div>
@@ -96,16 +80,17 @@ const Contributions = () => {
       {filterOpen && (
         <div
           className="fixed inset-0 z-70 flex items-center justify-center px-4 bg-black/30 xl:hidden"
-          onMouseDown={() => setFilterOpen(false)}
+          onMouseDown={applyMobileFilters}
         >
           <div
             className="w-full max-w-lg max-h-[88vh] overflow-y-auto"
             onMouseDown={event => event.stopPropagation()}
           >
             <ContributionSidebar
-              filters={filters}
-              setFilters={setFilters}
+              filters={mobileDraftFilters}
+              setFilters={setMobileDraftFilters}
               mobileMode
+              onDraftChange={setMobileDraftFilters}
               onClose={() => setFilterOpen(false)}
             />
           </div>

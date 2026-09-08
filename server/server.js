@@ -1,3 +1,4 @@
+const {createContributionRouter} = require('./routes/contributions')
 const express = require('express')
 const cors = require('cors')
 require('dotenv').config()
@@ -17,7 +18,6 @@ const githubHeaders = {
     : {})
 }
 
-const {createContributionRouter} = require('./routes/contributions')
 const cache = new Map()
 const CACHE_TIME = 30 * 1000
 
@@ -143,8 +143,7 @@ const formatRepository = repo => ({
 
 const githubRequest = async url => {
   const cached = cache.get(url)
-  app.use('/api/contributions', createContributionRouter({githubRequest}))
-  
+
   if (cached && Date.now() - cached.time < CACHE_TIME) {
     return cached.data
   }
@@ -176,7 +175,7 @@ const githubRequest = async url => {
 
   return data
 }
-
+app.use('/api/contributions', createContributionRouter({githubRequest}))
 const buildSearchQuery = ({
   search,
   languages,

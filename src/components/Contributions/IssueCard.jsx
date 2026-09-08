@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react'
+import React, {useEffect, useRef, useState} from 'react'
 import {
   ArrowRight,
   BarChart3,
@@ -49,6 +49,87 @@ const getSavedIssues = () => {
   }
 }
 
+const TagOverflow = ({items = [], visible = 3, variant = 'label'}) => {
+  const [open, setOpen] = useState(false)
+  const popupRef = useRef(null)
+
+  useEffect(() => {
+    const handleOutsideClick = event => {
+      if (popupRef.current && !popupRef.current.contains(event.target)) {
+        setOpen(false)
+      }
+    }
+
+    if (open) {
+      document.addEventListener('mousedown', handleOutsideClick)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick)
+    }
+  }, [open])
+
+  if (!items.length) return null
+
+  const visibleItems = items.slice(0, visible)
+  const hiddenCount = items.length - visible
+
+  const itemClass = variant === 'technology'
+    ? 'px-2.5 py-1 text-[10px] font-medium text-gray-600 bg-gray-100 rounded-md'
+    : 'px-3 py-1.5 text-[11px] font-medium rounded-full'
+
+  const getLabelClass = item => {
+    const normalized = String(item).toLowerCase()
+
+    if (normalized === 'good first issue') {
+      return 'text-green-700 bg-green-50'
+    }
+
+    if (normalized === 'bug') {
+      return 'text-red-600 bg-red-50'
+    }
+
+    return 'text-indigo-600 bg-indigo-50'
+  }
+
+  return (
+    <div ref={popupRef} className="relative flex flex-wrap items-center gap-2">
+      {visibleItems.map(item => (
+        <span
+          key={item}
+          className={`${itemClass} ${variant === 'label' ? getLabelClass(item) : ''}`}
+        >
+          {item}
+        </span>
+      ))}
+
+      {hiddenCount > 0 && (
+        <button
+          onClick={() => setOpen(!open)}
+          className="px-2.5 py-1 text-[10px] font-semibold text-gray-500 bg-gray-50 border border-gray-200 rounded-md hover:text-indigo-600 hover:bg-indigo-50 hover:border-indigo-200 transition"
+        >
+          +{hiddenCount}
+        </button>
+      )}
+
+      {open && (
+        <div className="absolute left-0 top-full z-30 mt-2 w-56 max-w-[calc(100vw-3rem)] max-h-44 overflow-y-auto p-2 bg-white border border-gray-200 rounded-xl shadow-lg">
+          <div className="flex flex-wrap gap-2">
+            {items.map(item => (
+              <span
+                key={item}
+                className={`${itemClass} ${variant === 'label' ? getLabelClass(item) : ''}`}
+              >
+                {item}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 const IssueCard = ({issue}) => {
   const [showMobileDetails, setShowMobileDetails] = useState(false)
 
@@ -59,7 +140,9 @@ const IssueCard = ({issue}) => {
 
   const navigate = useNavigate()
 
-  const [owner, repositoryName] = issue.repo.split('/')
+  const owner = issue.owner || issue.repo?.split('/')[0] || ''
+  const repositoryName = issue.repositoryName || issue.repo?.split('/')[1] || ''
+  const repositoryPath = issue.repo || `${owner}/${repositoryName}`
 
   useEffect(() => {
     const handleSavedUpdate = () => {
@@ -67,23 +150,17 @@ const IssueCard = ({issue}) => {
       setSaved(savedIssues.some(savedIssue => savedIssue.id === issue.id))
     }
 
-    window.addEventListener(
-      'sidequest-saved-updated',
-      handleSavedUpdate
-    )
+    window.addEventListener('sidequest-saved-updated', handleSavedUpdate)
 
     return () => {
-      window.removeEventListener(
-        'sidequest-saved-updated',
-        handleSavedUpdate
-      )
+      window.removeEventListener('sidequest-saved-updated', handleSavedUpdate)
     }
   }, [issue.id])
 
   const handleOpportunity = () => {
-    navigate(
-      `/contributions/${owner}/${repositoryName}/${issue.number}`
-    )
+    if (!owner || !repositoryName || !issue.number) return
+
+    navigate(`/contributions/${owner}/${repositoryName}/${issue.number}`)
   }
 
   const handleSave = () => {
@@ -94,11 +171,7 @@ const IssueCard = ({issue}) => {
         savedIssue => savedIssue.id !== issue.id
       )
 
-      localStorage.setItem(
-        SAVED_KEY,
-        JSON.stringify(updatedIssues)
-      )
-
+      localStorage.setItem(SAVED_KEY, JSON.stringify(updatedIssues))
       setSaved(false)
     } else {
       const updatedIssues = [
@@ -106,17 +179,11 @@ const IssueCard = ({issue}) => {
         issue
       ]
 
-      localStorage.setItem(
-        SAVED_KEY,
-        JSON.stringify(updatedIssues)
-      )
-
+      localStorage.setItem(SAVED_KEY, JSON.stringify(updatedIssues))
       setSaved(true)
     }
 
-    window.dispatchEvent(
-      new Event('sidequest-saved-updated')
-    )
+    window.dispatchEvent(new Event('sidequest-saved-updated'))
   }
 
   return (
@@ -124,14 +191,20 @@ const IssueCard = ({issue}) => {
       <div className={`${showMobileDetails ? 'hidden xl:flex' : 'flex'} h-full min-w-0`}>
         <div className="flex-1 min-w-0 pr-5">
           <div className="flex items-start gap-3">
-            <div className="flex items-center justify-center size-11 shrink-0 bg-gray-100 rounded-lg text-sm font-semibold text-gray-600">
-              {issue.icon}
+            <div className="flex items-center justify-center size-11 shrink-0 bg-gray-100 rounded-lg overflow-hidden">
+              {issue.avatarUrl ? (
+                <img src={issue.avatarUrl} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-sm font-semibold text-gray-600">
+                  {issue.icon || repositoryName.charAt(0).toUpperCase()}
+                </span>
+              )}
             </div>
 
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 min-w-0">
                 <span className="text-[16px] font-semibold text-indigo-600 truncate">
-                  {owner}/{repositoryName}
+                  {repositoryPath}
                 </span>
 
                 {issue.verified && (
@@ -150,26 +223,7 @@ const IssueCard = ({issue}) => {
           </div>
 
           <div className="flex flex-wrap items-center gap-2 mt-2.5 ml-14">
-            {issue.labels.slice(0, 3).map(label => (
-              <span
-                key={label}
-                className={`px-3 py-1.5 text-[11px] font-medium rounded-full ${
-                  label.toLowerCase() === 'good first issue'
-                    ? 'text-green-700 bg-green-50'
-                    : label.toLowerCase() === 'bug'
-                      ? 'text-red-600 bg-red-50'
-                      : 'text-indigo-600 bg-indigo-50'
-                }`}
-              >
-                {label}
-              </span>
-            ))}
-
-            {issue.labels.length > 3 && (
-              <span className="px-3 py-1.5 text-[11px] font-medium text-gray-500 bg-gray-50 rounded-full">
-                +{issue.labels.length - 3}
-              </span>
-            )}
+            <TagOverflow items={issue.labels} visible={3} variant="label" />
           </div>
 
           <div className="mt-2 pt-2.5 border-t border-gray-100">
@@ -191,12 +245,12 @@ const IssueCard = ({issue}) => {
 
               <span className="flex items-center gap-1">
                 <MessageCircle className="size-4" />
-                {issue.comments}
+                {issue.comments ?? 0}
               </span>
 
               <span className="flex items-center gap-1.5 font-semibold text-gray-800">
                 <BarChart3 className="size-4 text-green-500" />
-                {issue.activity}
+                {issue.activity || 'Unknown'}
               </span>
             </div>
 
@@ -204,37 +258,24 @@ const IssueCard = ({issue}) => {
               <span className="size-2.5 rounded-full bg-yellow-400 shrink-0" />
 
               <span className="font-semibold text-gray-800">
-                {issue.language}
+                {issue.language || 'Unknown'}
               </span>
 
-              {issue.technologies.slice(0, 2).map(technology => (
-                <span
-                  key={technology}
-                  className="px-2.5 py-1 text-[10px] font-medium text-gray-600 bg-gray-100 rounded-md"
-                >
-                  {technology}
-                </span>
-              ))}
-
-              {issue.technologies.length > 2 && (
-                <span className="text-gray-400">
-                  +{issue.technologies.length - 2}
-                </span>
-              )}
+              <TagOverflow items={issue.technologies} visible={2} variant="technology" />
             </div>
           </div>
         </div>
 
         <div className="hidden xl:flex flex-col w-63.75 shrink-0 px-2 border-l border-gray-100">
           <div className="flex items-center gap-2.5">
-            <span className={`flex items-center gap-1.5 px-3.5 py-2 text-[13px] font-semibold rounded-xl ${difficultyStyles[issue.difficulty]}`}>
+            <span className={`flex items-center gap-1.5 px-3.5 py-2 text-[13px] font-semibold rounded-xl ${difficultyStyles[issue.difficulty] || difficultyStyles.Easy}`}>
               <BarChart3 className="size-4" />
-              {issue.difficulty}
+              {issue.difficulty || 'Easy'}
             </span>
 
             <span className="flex items-center gap-1.5 px-3.5 py-2 text-[13px] font-semibold text-indigo-700 bg-indigo-50 rounded-xl max-w-full min-w-0">
               <Settings className="size-4 shrink-0" />
-              <span className="truncate">{issue.type}</span>
+              <span className="truncate">{issue.type || 'General'}</span>
             </span>
           </div>
 
@@ -245,7 +286,7 @@ const IssueCard = ({issue}) => {
           </div>
 
           <div className="flex flex-col gap-2.5 mt-3">
-            {issue.reasons.slice(0, 2).map(reason => (
+            {(issue.reasons || []).slice(0, 2).map(reason => (
               <div key={reason} className="flex items-start gap-2">
                 <CheckCircle2 className="size-4 shrink-0 mt-0.5 text-white fill-green-500" />
                 <span className="text-[12px] leading-4 text-gray-600">
@@ -264,17 +305,17 @@ const IssueCard = ({issue}) => {
           <div className="flex flex-col gap-3.5 mt-7">
             <div className="flex items-center gap-2 text-[12px] text-gray-500">
               <Clock3 className="size-4 shrink-0" />
-              <span>Opened {issue.opened}</span>
+              <span>Opened {issue.opened || 'Unknown'}</span>
             </div>
 
             <div className="flex items-center gap-2 text-[12px] text-gray-500">
               <Clock3 className="size-4 shrink-0" />
-              <span>Updated {issue.updated}</span>
+              <span>Updated {issue.updated || 'Unknown'}</span>
             </div>
 
             <div className="flex items-center gap-2 text-[12px] text-gray-500">
               <UserRound className="size-4 shrink-0" />
-              <span>{issue.assignment}</span>
+              <span>{issue.assignment || 'Unassigned'}</span>
             </div>
           </div>
 
@@ -292,14 +333,14 @@ const IssueCard = ({issue}) => {
         <div className="flex xl:hidden h-full pr-12">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <span className={`flex items-center gap-1.5 px-3 py-2 text-[13px] font-semibold rounded-xl ${difficultyStyles[issue.difficulty]}`}>
+              <span className={`flex items-center gap-1.5 px-3 py-2 text-[13px] font-semibold rounded-xl ${difficultyStyles[issue.difficulty] || difficultyStyles.Easy}`}>
                 <BarChart3 className="size-4" />
-                {issue.difficulty}
+                {issue.difficulty || 'Easy'}
               </span>
 
               <span className="flex items-center gap-1.5 px-3 py-2 text-[13px] font-semibold text-indigo-700 bg-indigo-50 rounded-xl">
                 <Settings className="size-4" />
-                {issue.type}
+                {issue.type || 'General'}
               </span>
             </div>
 
@@ -310,17 +351,17 @@ const IssueCard = ({issue}) => {
 
               <div className="flex items-center gap-2 text-[12px] text-gray-500">
                 <Clock3 className="size-4" />
-                Opened {issue.opened}
+                Opened {issue.opened || 'Unknown'}
               </div>
 
               <div className="flex items-center gap-2 text-[12px] text-gray-500">
                 <Clock3 className="size-4" />
-                Updated {issue.updated}
+                Updated {issue.updated || 'Unknown'}
               </div>
 
               <div className="flex items-center gap-2 text-[12px] text-gray-500">
                 <UserRound className="size-4" />
-                {issue.assignment}
+                {issue.assignment || 'Unassigned'}
               </div>
             </div>
 
@@ -331,7 +372,7 @@ const IssueCard = ({issue}) => {
             </div>
 
             <div className="flex flex-col gap-2 mt-2">
-              {issue.reasons.map(reason => (
+              {(issue.reasons || []).map(reason => (
                 <div key={reason} className="flex items-start gap-2">
                   <CheckCircle2 className="size-4 mt-0.5 text-white fill-green-500 shrink-0" />
                   <span className="text-[11px] leading-4 text-gray-600">

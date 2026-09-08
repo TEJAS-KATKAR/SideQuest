@@ -61,10 +61,44 @@ const technologyTopicMap = {
   Mobile: ['mobile']
 }
 
+const repositoryCache = new Map()
+
 const getDateString = daysAgo => {
   const date = new Date()
   date.setDate(date.getDate() - daysAgo)
   return date.toISOString().split('T')[0]
+}
+
+const normalizeLabels = labels =>
+  (labels || [])
+    .map(label => typeof label === 'string' ? label : label?.name)
+    .filter(Boolean)
+
+const normalizeTopics = topics =>
+  Array.isArray(topics)
+    ? topics.map(topic => String(topic).toLowerCase())
+    : []
+
+const getRepositoryData = async (repositoryUrl, githubRequest) => {
+  if (!repositoryUrl) return null
+
+  if (repositoryCache.has(repositoryUrl)) {
+    return repositoryCache.get(repositoryUrl)
+  }
+
+  try {
+    const repository = await githubRequest(repositoryUrl)
+
+    repositoryCache.set(repositoryUrl, repository)
+
+    setTimeout(() => {
+      repositoryCache.delete(repositoryUrl)
+    }, 300000)
+
+    return repository
+  } catch {
+    return null
+  }
 }
 
 const buildIssueQuery = ({
@@ -133,28 +167,14 @@ const buildIssueQuery = ({
   return parts.join(' ')
 }
 
-const normalizeLabels = labels =>
-  (labels || [])
-    .map(label => typeof label === 'string' ? label : label.name)
-    .filter(Boolean)
-
-const normalizeTopics = topics =>
-  Array.isArray(topics)
-    ? topics.map(topic => topic.toLowerCase())
-    : []
-
 const matchesTechnology = (issue, selectedTechnologies) => {
   if (!selectedTechnologies.length) return true
 
-  const topics = normalizeTopics(issue.repository?.topics)
+  const technologies = issue.technologies || []
 
-  return selectedTechnologies.some(technology => {
-    const mappedTopics = technologyTopicMap[technology] || [
-      technology.toLowerCase().replace(/\s+/g, '-')
-    ]
-
-    return mappedTopics.some(topic => topics.includes(topic))
-  })
+  return selectedTechnologies.some(technology =>
+    technologies.includes(technology)
+  )
 }
 
 const matchesDiscussion = (issue, discussion) => {
@@ -172,20 +192,17 @@ const matchesDiscussion = (issue, discussion) => {
 
 const matchesActivity = (issue, activity) => {
   if (activity === 'All') return true
-
-  return analyzeContribution(issue).activity === activity
+  return issue.activity === activity
 }
 
 const matchesType = (issue, types) => {
   if (!types.length) return true
-
-  return types.includes(analyzeContribution(issue).type)
+  return types.includes(issue.type)
 }
 
 const matchesDifficulty = (issue, difficulty) => {
   if (difficulty === 'All') return true
-
-  return analyzeContribution(issue).difficulty === difficulty
+  return issue.difficulty === difficulty
 }
 
 const matchesSearch = (issue, search) => {
@@ -193,18 +210,24 @@ const matchesSearch = (issue, search) => {
 
   const value = search.toLowerCase()
 
-  const labels = normalizeLabels(issue.labels).join(' ').toLowerCase()
-  const topics = normalizeTopics(issue.repository?.topics).join(' ').toLowerCase()
-  const repo = issue.repository?.full_name?.toLowerCase() || ''
+  const labels = normalizeLabels(issue.labels)
+    .join(' ')
+    .toLowerCase()
+
+  const technologies = (issue.technologies || [])
+    .join(' ')
+    .toLowerCase()
+
+  const repo = issue.repo?.toLowerCase() || ''
   const title = issue.title?.toLowerCase() || ''
-  const body = issue.body?.toLowerCase() || ''
+  const body = issue.description?.toLowerCase() || ''
 
   return (
     title.includes(value) ||
     body.includes(value) ||
     repo.includes(value) ||
     labels.includes(value) ||
-    topics.includes(value)
+    technologies.includes(value)
   )
 }
 
@@ -218,64 +241,193 @@ const formatRelativeTime = dateValue => {
   if (seconds < 60) return 'just now'
 
   const minutes = Math.floor(seconds / 60)
-  if (minutes < 60) return `${minutes}m ago`
+
+  if (minutes < 60) {
+    return `${minutes}m ago`
+  }
 
   const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours}h ago`
+
+  if (hours < 24) {
+    return `${hours}h ago`
+  }
 
   const days = Math.floor(hours / 24)
-  if (days < 30) return `${days}d ago`
+
+  if (days < 30) {
+    return `${days}d ago`
+  }
 
   const months = Math.floor(days / 30)
-  if (months < 12) return `${months}mo ago`
+
+  if (months < 12) {
+    return `${months}mo ago`
+  }
 
   return `${Math.floor(months / 12)}y ago`
 }
 
-const formatIssue = issue => {
-  const repository = issue.repository || {}
+const formatIssue = (issue, repositoryOverride = null) => {
+  const repository = repositoryOverride || issue.repository || {}
+  const repositoryOwner = repository.owner || {}
+
   const labels = normalizeLabels(issue.labels)
+
+  const repositoryFullName =
+    repository.full_name ||
+    issue.repository_url?.split('/repos/')[1] ||
+    issue.html_url?.split('/issues/')[0]?.replace('https://github.com/', '') ||
+    ''
+
+  const [ownerFromName, repoFromName] = repositoryFullName.split('/')
+
+  const owner =
+    repositoryOwner.login ||
+    ownerFromName ||
+    ''
+
+  const repositoryName =
+    repository.name ||
+    repoFromName ||
+    ''
+
   const analysis = analyzeContribution({
     ...issue,
-    labels
+    labels,
+    repository
   })
+
+  const topics = normalizeTopics(repository.topics)
+
+  const technologies = Object.keys(technologyTopicMap)
+    .filter(technology =>
+      technologyTopicMap[technology].some(topic =>
+        topics.includes(topic)
+      )
+    )
+    .slice(0, 10)
+
+  const stars = Number(
+    repository.stargazers_count ??
+    repository.stars ??
+    repository.watchers_count ??
+    repository.watchers ??
+    0
+  )
+
+  const forks = Number(
+    repository.forks_count ??
+    repository.forks ??
+    0
+  )
+
+  const watchers = Number(
+    repository.subscribers_count ??
+    0
+  )
+
+  const language =
+    repository.language ||
+    'Unknown'
+
+  const activityDate =
+    repository.pushed_at ||
+    repository.updated_at ||
+    issue.updated_at
 
   return {
     id: issue.id,
-    repo: repository.full_name || '',
+    repo: owner && repositoryName
+      ? `${owner}/${repositoryName}`
+      : repositoryFullName,
+    owner,
+    repositoryName,
+
     title: issue.title || 'Untitled issue',
     number: issue.number,
     description: issue.body || '',
+    state: issue.state || 'open',
+
     opened: formatRelativeTime(issue.created_at),
     updated: formatRelativeTime(issue.updated_at),
+
     difficulty: analysis.difficulty,
     type: analysis.type,
+
     labels,
-    language: repository.language || 'Unknown',
-    technologies: Object.keys(technologyTopicMap).filter(technology =>
-      (technologyTopicMap[technology] || []).some(topic =>
-        normalizeTopics(repository.topics).includes(topic)
-      )
-    ).slice(0, 3),
+    language,
+    technologies,
+
     comments: Number(issue.comments) || 0,
-    stars: Number(repository.stargazers_count) || 0,
-    forks: Number(repository.forks_count) || 0,
-    watchers: Number(repository.watchers_count) || 0,
-    activity: analysis.activity,
+
+    stars,
+    forks,
+    watchers,
+
+    activity:
+      analysis.activity ||
+      (activityDate ? 'Active' : 'Unknown'),
+
     assignment: analysis.assignment,
     issueAge: analysis.issueAge,
     discussion: analysis.discussion,
     scope: analysis.scope,
-    beginner: analysis.difficulty === 'Beginner',
-    verified: Boolean(issue.html_url),
-    icon: repository.name?.charAt(0).toUpperCase() || 'G',
-    reasons: analysis.reasons,
-    htmlUrl: issue.html_url || '',
-    repositoryUrl: repository.html_url || '',
-    author: issue.user?.login || 'Unknown',
-    createdAt: issue.created_at,
-    updatedAt: issue.updated_at,
-    difficultyRank: analysis.difficultyRank
+
+    beginner:
+      analysis.difficulty === 'Beginner' ||
+      labels.some(label =>
+        ['good first issue', 'first issue', 'beginner'].includes(
+          label.toLowerCase()
+        )
+      ),
+
+    verified: Boolean(repository.owner),
+
+    icon:
+      repositoryName?.charAt(0).toUpperCase() ||
+      'G',
+
+    avatarUrl:
+      repositoryOwner.avatar_url ||
+      issue.user?.avatar_url ||
+      '',
+
+    repositoryDescription:
+      repository.description ||
+      'No repository description available.',
+
+    repositoryUrl:
+      repository.html_url ||
+      (owner && repositoryName
+        ? `https://github.com/${owner}/${repositoryName}`
+        : ''),
+
+    htmlUrl:
+      issue.html_url ||
+      '',
+
+    author:
+      issue.user?.login ||
+      'Unknown',
+
+    authorAvatar:
+      issue.user?.avatar_url ||
+      '',
+
+    createdAt:
+      issue.created_at,
+
+    updatedAt:
+      issue.updated_at,
+
+    difficultyRank:
+      analysis.difficultyRank,
+
+    repositoryActivity:
+      analysis.activity,
+
+    reasons:
+      analysis.reasons || []
   }
 }
 
@@ -283,19 +435,58 @@ const getBestMatchScore = issue => {
   let score = 0
 
   if (issue.beginner) score += 40
-  if (issue.labels.some(label => label.toLowerCase() === 'help wanted')) score += 25
-  if (issue.assignment === 'Unassigned') score += 15
-  if (issue.discussion === 'No discussion') score += 8
-  if (issue.discussion === 'Low') score += 5
-  if (issue.activity === 'Very active') score += 12
-  if (issue.activity === 'Active') score += 8
-  if (issue.difficulty === 'Easy') score += 8
+
+  if (
+    issue.labels.some(
+      label => label.toLowerCase() === 'help wanted'
+    )
+  ) {
+    score += 25
+  }
+
+  if (issue.assignment === 'Unassigned') {
+    score += 15
+  }
+
+  if (issue.discussion === 'No discussion') {
+    score += 8
+  }
+
+  if (issue.discussion === 'Low') {
+    score += 5
+  }
+
+  if (issue.activity === 'Very active') {
+    score += 12
+  }
+
+  if (issue.activity === 'Active') {
+    score += 8
+  }
+
+  if (issue.difficulty === 'Easy') {
+    score += 8
+  }
+
+  if (issue.stars >= 100000) {
+    score += 30
+  } else if (issue.stars >= 50000) {
+    score += 25
+  } else if (issue.stars >= 10000) {
+    score += 20
+  } else if (issue.stars >= 5000) {
+    score += 15
+  } else if (issue.stars >= 1000) {
+    score += 8
+  }
 
   const ageDays = Math.floor(
     (Date.now() - new Date(issue.createdAt).getTime()) / 86400000
   )
 
-  if (ageDays <= 7) score += 10
+  if (ageDays <= 7) {
+    score += 10
+  }
 
   return score
 }
@@ -305,13 +496,17 @@ const sortIssues = (issues, sort) => {
 
   if (sort === 'Recently opened') {
     return sorted.sort(
-      (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+      (a, b) =>
+        new Date(b.createdAt) -
+        new Date(a.createdAt)
     )
   }
 
   if (sort === 'Recently updated') {
     return sorted.sort(
-      (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
+      (a, b) =>
+        new Date(b.updatedAt) -
+        new Date(a.updatedAt)
     )
   }
 
@@ -342,12 +537,25 @@ const sortIssues = (issues, sort) => {
   if (sort === 'Lowest difficulty') {
     return sorted.sort(
       (a, b) =>
-        difficultyRank[a.difficulty] - difficultyRank[b.difficulty]
+        difficultyRank[a.difficulty] -
+        difficultyRank[b.difficulty]
     )
   }
 
   return sorted.sort(
-    (a, b) => getBestMatchScore(b) - getBestMatchScore(a)
+    (a, b) =>
+      getBestMatchScore(b) -
+      getBestMatchScore(a)
+  )
+}
+
+const needsRepositoryData = issue => {
+  return (
+    !issue.language ||
+    issue.language === 'Unknown' ||
+    !issue.stars ||
+    !issue.forks ||
+    !issue.avatarUrl
   )
 }
 
@@ -416,36 +624,94 @@ const createContributionRouter = ({githubRequest}) => {
         `https://api.github.com/search/issues?${params.toString()}`
       )
 
-      let issues = (data.items || []).map(formatIssue)
+      let issues = (data.items || []).map(issue =>
+        formatIssue(issue)
+      )
 
-      issues = issues.filter(issue => {
-        const rawIssue = data.items.find(item => item.id === issue.id)
-
-        return (
-          matchesSearch(rawIssue, q.trim()) &&
-          matchesTechnology(rawIssue, technologies) &&
-          matchesDifficulty(rawIssue, difficulty) &&
-          matchesType(rawIssue, issueTypes) &&
-          matchesActivity(rawIssue, activity) &&
-          matchesDiscussion(rawIssue, discussion) &&
-          (beginner !== 'true' || issue.beginner)
-        )
-      })
+      issues = issues.filter(issue =>
+        matchesSearch(issue, q.trim()) &&
+        matchesTechnology(issue, technologies) &&
+        matchesDifficulty(issue, difficulty) &&
+        matchesType(issue, issueTypes) &&
+        matchesActivity(issue, activity) &&
+        matchesDiscussion(issue, discussion) &&
+        (beginner !== 'true' || issue.beginner)
+      )
 
       issues = sortIssues(issues, sort)
 
-      const currentPage = Math.max(Number(page) || 1, 1)
+      const currentPage = Math.max(
+        Number(page) || 1,
+        1
+      )
+
       const perPage = Math.min(
         Math.max(Number(per_page) || 10, 1),
         10
       )
 
       const total = issues.length
-      const totalPages = Math.max(Math.ceil(total / perPage), 1)
-      const safePage = Math.min(currentPage, totalPages)
+      const totalPages = Math.max(
+        Math.ceil(total / perPage),
+        1
+      )
 
-      const start = (safePage - 1) * perPage
-      const paginatedIssues = issues.slice(start, start + perPage)
+      const safePage = Math.min(
+        currentPage,
+        totalPages
+      )
+
+      const start =
+        (safePage - 1) * perPage
+
+      let paginatedIssues =
+        issues.slice(
+          start,
+          start + perPage
+        )
+
+      /*
+       * Search results don't always expose every repository
+       * statistic consistently. Only enrich the issues that
+       * are actually going to be displayed.
+       */
+      paginatedIssues = await Promise.all(
+        paginatedIssues.map(async issue => {
+          if (!needsRepositoryData(issue)) {
+            return issue
+          }
+
+          const repositoryUrl =
+            issue.repositoryUrl ||
+            (
+              issue.owner &&
+              issue.repositoryName
+                ? `https://api.github.com/repos/${issue.owner}/${issue.repositoryName}`
+                : ''
+            )
+
+          const repository =
+            await getRepositoryData(
+              repositoryUrl,
+              githubRequest
+            )
+
+          if (!repository) {
+            return issue
+          }
+
+          return formatIssue(
+            {
+              ...issue,
+              repository,
+              repository_url:
+                repository.url ||
+                repositoryUrl
+            },
+            repository
+          )
+        })
+      )
 
       res.json({
         issues: paginatedIssues,
@@ -453,24 +719,178 @@ const createContributionRouter = ({githubRequest}) => {
         page: safePage,
         perPage,
         totalPages,
-        sourceResults: data.total_count || 0,
-        hasMoreSourceResults: (data.total_count || 0) > 100,
+        sourceResults:
+          data.total_count || 0,
+        hasMoreSourceResults:
+          (data.total_count || 0) > 100,
         query: searchQuery
       })
     } catch (error) {
-      console.error('Contribution search error:', error)
+      console.error(
+        'Contribution search error:',
+        error
+      )
 
       res.status(error.status || 500).json({
-        error: error.message || 'Failed to fetch contribution opportunities',
-        github: error.githubData || null,
+        error:
+          error.message ||
+          'Failed to fetch contribution opportunities',
+
+        github:
+          error.githubData || null,
+
         rateLimit: {
           limit: error.limit || null,
-          remaining: error.remaining || null,
-          reset: error.reset || null
+          remaining:
+            error.remaining || null,
+          reset:
+            error.reset || null
         }
       })
     }
   })
+
+  router.get(
+    '/:owner/:repo/:issueNumber',
+    async (req, res) => {
+      try {
+        const {
+          owner,
+          repo,
+          issueNumber
+        } = req.params
+
+        const issueUrl =
+          `https://api.github.com/repos/${owner}/${repo}/issues/${issueNumber}`
+
+        const repositoryUrl =
+          `https://api.github.com/repos/${owner}/${repo}`
+
+        const issue =
+          await githubRequest(issueUrl)
+
+        const repository =
+          await getRepositoryData(
+            repositoryUrl,
+            githubRequest
+          )
+
+        let comments = []
+
+        if (Number(issue.comments) > 0) {
+          const commentsUrl =
+            `https://api.github.com/repos/${owner}/${repo}/issues/${issueNumber}/comments?per_page=30`
+
+          const commentData =
+            await githubRequest(commentsUrl)
+
+          comments =
+            (commentData || []).map(
+              comment => ({
+                id: comment.id,
+                author:
+                  comment.user?.login ||
+                  'GitHub user',
+                avatarUrl:
+                  comment.user?.avatar_url ||
+                  '',
+                body:
+                  comment.body || '',
+                createdAt:
+                  comment.created_at || '',
+                updatedAt:
+                  comment.updated_at || ''
+              })
+            )
+        }
+
+        const formattedIssue =
+          formatIssue(
+            {
+              ...issue,
+              repository
+            },
+            repository
+          )
+
+        res.json({
+          issue: {
+            ...formattedIssue,
+
+            repository:
+              repository || {},
+
+            repo:
+              repository?.full_name ||
+              formattedIssue.repo,
+
+            owner:
+              repository?.owner?.login ||
+              formattedIssue.owner ||
+              owner,
+
+            repositoryName:
+              repository?.name ||
+              formattedIssue.repositoryName ||
+              repo,
+
+            language:
+              repository?.language ||
+              formattedIssue.language,
+
+            stars:
+              Number(
+                repository?.stargazers_count ??
+                formattedIssue.stars ??
+                0
+              ),
+
+            forks:
+              Number(
+                repository?.forks_count ??
+                formattedIssue.forks ??
+                0
+              ),
+
+            watchers:
+              Number(
+                repository?.subscribers_count ??
+                formattedIssue.watchers ??
+                0
+              ),
+
+            avatarUrl:
+              repository?.owner?.avatar_url ||
+              formattedIssue.avatarUrl ||
+              '',
+
+            repositoryUrl:
+              repository?.html_url ||
+              repositoryUrl,
+
+            htmlUrl:
+              issue.html_url ||
+              `https://github.com/${owner}/${repo}/issues/${issueNumber}`
+          },
+
+          comments
+        })
+      } catch (error) {
+        console.error(
+          'Contribution details error:',
+          error
+        )
+
+        res.status(
+          error.status || 500
+        ).json({
+          error:
+            error.message ||
+            'Failed to load contribution'
+        })
+      }
+    }
+  )
 
   return router
 }
