@@ -27,10 +27,10 @@ const FAQItem = ({item, open, onToggle}) => {
     >
       <button
         onClick={onToggle}
-        className="flex items-center justify-between w-full gap-4 px-5 py-4 text-left cursor-pointer"
+        className="flex items-center justify-between w-full gap-4 px-4 sm:px-5 py-4 text-left cursor-pointer"
         aria-expanded={open}
       >
-        <span className={`text-[15px] font-semibold transition-colors ${
+        <span className={`min-w-0 break-words [overflow-wrap:anywhere] lg:break-normal lg:[overflow-wrap:normal] text-[15px] font-semibold transition-colors ${
           open ? 'text-indigo-700' : 'text-gray-800'
         }`}>
           {item.question}
@@ -53,7 +53,7 @@ const FAQItem = ({item, open, onToggle}) => {
         <div className="overflow-hidden">
           <div className="px-5 pb-5">
             <div className="pt-1 border-t border-indigo-100">
-              <p className="pt-4 text-[15px] leading-6 text-gray-600">
+              <p className="pt-4 text-[15px] leading-6 text-gray-600 break-words [overflow-wrap:anywhere] lg:break-normal lg:[overflow-wrap:normal]">
                 {item.answer}
               </p>
             </div>

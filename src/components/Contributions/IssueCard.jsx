@@ -212,11 +212,11 @@ const IssueCard = ({issue}) => {
                 )}
               </div>
 
-              <h3 className="mt-1 text-[18px] font-bold leading-6 text-gray-900 truncate">
+              <h3 className="mt-1 text-[18px] font-bold leading-6 text-gray-900 truncate break-all lg:break-normal">
                 {issue.title}
               </h3>
 
-              <p className="mt-1.5 max-w-2xl text-[13px] leading-5 text-gray-500 line-clamp-2">
+              <p className="mt-1.5 max-w-2xl text-[13px] leading-5 text-gray-500 line-clamp-2 break-words [overflow-wrap:anywhere]">
                 {issue.description || 'This issue has a clearly defined task that can be worked on by a contributor.'}
               </p>
             </div>
@@ -352,7 +352,7 @@ const IssueCard = ({issue}) => {
               #{issue.number}
             </span>
 
-            <div className="grid grid-cols-3 gap-4 mt-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-5">
               <div className="flex flex-col gap-3">
                 <p className="text-[12px] font-semibold text-gray-800">
                   Issue details

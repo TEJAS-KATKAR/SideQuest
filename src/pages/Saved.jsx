@@ -32,14 +32,14 @@ const Saved = () => {
   }, [])
 
   return (
-    <div className="px-8 py-6">
+    <div className="px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-start sm:items-center gap-4 min-w-0">
         <div className="flex items-center justify-center size-12 bg-indigo-100 rounded-xl">
           <Bookmark className="size-6 text-indigo-600" />
         </div>
 
-        <div>
+        <div className="min-w-0">
           <h1 className="text-[28px] font-bold text-gray-900">
             Saved Opportunities
           </h1>

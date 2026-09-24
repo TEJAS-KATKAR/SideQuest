@@ -213,13 +213,13 @@ const HowTo = () => {
   }, [])
 
   return (
-    <div className="px-8 py-7">
+    <div className="px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-7">
       <HowToHeader
         search={search}
         setSearch={setSearch}
       />
 
-      <div className="max-w-4xl mx-auto mt-8">
+      <div className="max-w-4xl min-w-0 mx-auto mt-8">
         {filteredSections.length > 0 ? (
           filteredSections.map(section => (
             <FAQSection

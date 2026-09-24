@@ -72,7 +72,7 @@ const Explore = () => {
   }
 
   return (
-    <div className="flex flex-col mx-8 my-6">
+    <div className="flex flex-col mx-4 my-5 sm:mx-6 sm:my-6 lg:mx-8">
 
       <ExploreHeader
         search={search}

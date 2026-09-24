@@ -179,7 +179,7 @@ const ContributionDetails = () => {
 
   if (loading) {
     return (
-      <div className="px-8 py-10">
+      <div className="px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
         <div className="flex items-center justify-center min-h-80">
           <p className="text-sm text-gray-500">
             Loading contribution...
@@ -191,7 +191,7 @@ const ContributionDetails = () => {
 
   if (error) {
     return (
-      <div className="px-8 py-10">
+      <div className="px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
         <div className="bg-white border border-red-200 rounded-xl p-8 text-center shadow-sm">
           <p className="text-lg font-semibold text-gray-900">
             Unable to load contribution
@@ -216,7 +216,7 @@ const ContributionDetails = () => {
 
   if (!issue) {
     return (
-      <div className="px-8 py-10">
+      <div className="px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
         <div className="bg-white border border-gray-200 rounded-xl p-8 text-center shadow-sm">
           <p className="text-lg font-semibold text-gray-900">
             Contribution not found
@@ -304,9 +304,9 @@ const ContributionDetails = () => {
         ]
 
   return (
-    <div className="px-8 py-5">
+    <div className="px-4 py-5 sm:px-6 lg:px-8">
 
-      <div className="flex items-center gap-2 text-sm text-gray-500 mb-5">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-gray-500 mb-5 min-w-0">
         <button
           onClick={() =>
             navigate('/contributions')
@@ -318,7 +318,7 @@ const ContributionDetails = () => {
 
         <ChevronRight size={15} />
 
-        <span className="text-indigo-600">
+        <span className="text-indigo-600 break-all lg:break-normal">
           {repositoryFullName}
         </span>
 
@@ -329,10 +329,10 @@ const ContributionDetails = () => {
         </span>
       </div>
 
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between min-w-0">
 
         <div className="min-w-0">
-          <h1 className="text-3xl font-bold text-gray-900">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 break-words [overflow-wrap:anywhere] lg:break-normal lg:[overflow-wrap:normal]">
             {issue.title}
           </h1>
 
@@ -387,7 +387,7 @@ const ContributionDetails = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-3 shrink-0 ml-6">
+        <div className="flex flex-wrap items-center gap-2 lg:flex-nowrap lg:gap-3 lg:shrink-0 lg:ml-6">
           <a
             href={githubUrl}
             target="_blank"
@@ -422,7 +422,7 @@ const ContributionDetails = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-[minmax(0,1fr)_352px] gap-6 mt-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_352px] gap-6 mt-6">
 
         <div className="min-w-0">
 
@@ -440,7 +440,7 @@ const ContributionDetails = () => {
 
             <div className="mt-4">
               {issue.description ? (
-                <p className="text-sm text-gray-700 leading-6 whitespace-pre-wrap">
+                <p className="text-sm text-gray-700 leading-6 whitespace-pre-wrap break-words [overflow-wrap:anywhere] lg:[overflow-wrap:normal]">
                   {issue.description}
                 </p>
               ) : (
@@ -463,7 +463,7 @@ const ContributionDetails = () => {
               </h2>
             </div>
 
-            <p className="text-sm text-gray-700 leading-6 mt-4 whitespace-pre-wrap">
+            <p className="text-sm text-gray-700 leading-6 mt-4 whitespace-pre-wrap break-words [overflow-wrap:anywhere] lg:[overflow-wrap:normal]">
               {issue.description ||
                 'Review the issue requirements on GitHub and implement the requested change.'}
             </p>
@@ -481,7 +481,7 @@ const ContributionDetails = () => {
               </h2>
             </div>
 
-            <div className="grid grid-cols-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4">
               {[
                 ['Difficulty', issue.difficulty || 'Unknown'],
                 ['Type', issue.type || 'General'],
@@ -533,7 +533,7 @@ const ContributionDetails = () => {
               </h2>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 mt-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-5">
               {reasons.map(reason => (
                 <div
                   key={reason}
@@ -584,7 +584,7 @@ const ContributionDetails = () => {
             </div>
           </section>
 
-          <section className="bg-indigo-50 border border-indigo-100 rounded-xl mt-6 p-6 flex items-center justify-between">
+          <section className="bg-indigo-50 border border-indigo-100 rounded-xl mt-6 p-4 sm:p-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between lg:gap-0">
             <div>
               <p className="text-xl font-bold text-gray-900">
                 Ready to work on this?
@@ -608,7 +608,7 @@ const ContributionDetails = () => {
           </section>
         </div>
 
-        <aside className="flex flex-col gap-5">
+        <aside className="min-w-0 flex flex-col gap-5">
 
           <section className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
             <p className="text-sm font-bold text-gray-900">
@@ -646,7 +646,7 @@ const ContributionDetails = () => {
                   )}
                 </div>
 
-                <p className="text-xs text-gray-500 leading-5 mt-1">
+                <p className="text-xs text-gray-500 leading-5 mt-1 break-words [overflow-wrap:anywhere] lg:[overflow-wrap:normal]">
                   {issue.repositoryDescription ||
                     repository.description ||
                     'No repository description available.'}
@@ -748,7 +748,7 @@ const ContributionDetails = () => {
                       {label}
                     </span>
 
-                    <span className="text-gray-600">
+                    <span className="min-w-0 text-gray-600 break-words [overflow-wrap:anywhere] lg:[overflow-wrap:normal]">
                       {value}
                     </span>
                   </div>
@@ -829,7 +829,7 @@ const ContributionDetails = () => {
                       </div>
                     </div>
 
-                    <p className="text-xs text-gray-600 leading-5 mt-3 whitespace-pre-wrap">
+                    <p className="text-xs text-gray-600 leading-5 mt-3 whitespace-pre-wrap break-words [overflow-wrap:anywhere] lg:[overflow-wrap:normal]">
                       {comment.body}
                     </p>
                   </div>
