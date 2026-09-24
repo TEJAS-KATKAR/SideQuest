@@ -3,6 +3,7 @@ import HeroBanner from '../components/MainPage/HeroBanner'
 import Otherinfo from '../components/Analytics/Otherinfo'
 import RecommendedRepos from '../components/MainPage/RecommendedRepos'
 import GoodFirstIssues from '../components/MainPage/GoodFirstIssues'
+import TrendingRepositories from '../components/MainPage/TrendingRepositories'
 
 const Home = () => {
   return (
@@ -15,6 +16,10 @@ const Home = () => {
 
           <RecommendedRepos />
           <GoodFirstIssues />
+
+          <div className="xl:hidden">
+            <TrendingRepositories />
+          </div>
         </div>
 
         <Otherinfo />

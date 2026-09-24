@@ -173,6 +173,7 @@ const faqSections = [
 
 const HowTo = () => {
   const [search, setSearch] = useState('')
+  const [initialQuestion, setInitialQuestion] = useState(null)
 
   const filteredSections = useMemo(() => {
     const query = search.trim().toLowerCase()
@@ -192,20 +193,22 @@ const HowTo = () => {
 
   useEffect(() => {
     const hash = window.location.hash.slice(1)
-
+  
     if (!hash) return
-
+  
+    setInitialQuestion(hash)
+  
     const timer = setTimeout(() => {
       const element = document.getElementById(hash)
-
+  
       if (element) {
         element.scrollIntoView({
           behavior: 'smooth',
           block: 'center'
         })
       }
-    }, 100)
-
+    }, 300)
+  
     return () => clearTimeout(timer)
   }, [])
 
@@ -220,9 +223,14 @@ const HowTo = () => {
         {filteredSections.length > 0 ? (
           filteredSections.map(section => (
             <FAQSection
-              key={section.title}
-              section={section}
-            />
+  key={section.title}
+  section={section}
+  initialOpenId={
+    section.title === 'Explore Repositories'
+      ? initialQuestion
+      : null
+  }
+/>
           ))
         ) : (
           <div className="flex flex-col items-center justify-center py-16 text-center bg-white border border-gray-200 rounded-2xl">

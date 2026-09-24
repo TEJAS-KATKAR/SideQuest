@@ -3,6 +3,7 @@ import {NavLink} from 'react-router-dom'
 import {House, Search, HeartHandshake, Bookmark, CircleQuestionMark, Settings} from 'lucide-react'
 import rocket from '../../assets/rocket.png'
 
+
 const Sidebar = ({collapsed, mobileOpen, onClose}) => {
   const navItems = [
     {to: '/', label: 'Home', icon: House},
@@ -13,12 +14,12 @@ const Sidebar = ({collapsed, mobileOpen, onClose}) => {
   ]
 
   return (
-    <aside className={`fixed top-0 left-0 z-50 flex h-screen flex-col bg-[#111b2f] transition-all duration-300 ${collapsed ? 'w-16' : 'w-50'} ${mobileOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
-      <div className={`flex items-center h-16 px-4 ${collapsed ? 'justify-center' : 'justify-start'}`}>
-        <div className="flex items-center justify-center shrink-0 w-9 h-9 text-lg font-bold text-white bg-[#7673eb] rounded-lg">
-          S
+<aside className={`fixed top-0 left-0 z-50 flex h-screen flex-col bg-[#111b2f] transition-all duration-300 ${collapsed ? 'w-16' : 'w-50'} ${mobileOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 shadow-[4px_0_12px_rgba(0,0,0,0.10)]`}>      
+  <div className={`flex items-center h-16 px-4 ${collapsed ? 'justify-center' : 'justify-start'}`}>
+        <div className="flex items-center justify-center shrink-0 w-10 h-10 text-lg font-bold text-white rounded-lg">
+          <img src='/logo.png'/>
         </div>
-        {!collapsed && <span className="ml-3 text-lg font-bold text-white">SideQuest</span>}
+        {!collapsed && <span className="ml-2 text-lg font-bold text-white">SideQuest</span>}
       </div>
 
       <div className="flex flex-col gap-3 my-4">

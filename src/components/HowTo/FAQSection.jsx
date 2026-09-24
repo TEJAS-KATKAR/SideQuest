@@ -1,8 +1,14 @@
-import React, {useState} from 'react'
+import React, {useEffect, useState} from 'react'
 import FAQItem from './FAQItem'
 
-const FAQSection = ({section}) => {
+const FAQSection = ({section, initialOpenId = null}) => {
   const [openId, setOpenId] = useState(null)
+
+  useEffect(() => {
+    if (initialOpenId) {
+      setOpenId(initialOpenId)
+    }
+  }, [initialOpenId])
 
   const handleToggle = id => {
     setOpenId(openId === id ? null : id)

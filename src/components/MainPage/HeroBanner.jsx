@@ -1,13 +1,37 @@
 import React from 'react'
 import gitfinal from '../../assets/gitfinal.png'
-import { Search } from 'lucide-react'
+import {Search} from 'lucide-react'
+import {useNavigate} from 'react-router-dom'
+
+const trendingTopics = [
+  'React',
+  'JavaScript',
+  'TypeScript',
+  'Python',
+  'Node.js',
+  'AI',
+  'Machine Learning',
+  'Web Development',
+  'Good First Issue'
+]
 
 const HeroBanner = () => {
-  return (
-    <div className='w-full h-30 flex p-6 '>
+  const navigate = useNavigate()
 
-      <div className='flex-6 px-12 py-4'>
-      <p className="mb-3 text-sm font-semibold tracking-wide text-indigo-600">
+  const searchTopic = (topic) => {
+    if (topic === 'Good First Issue') {
+      navigate(`/contributions?search=${encodeURIComponent(topic)}`)
+      return
+    }
+
+    navigate(`/explore?q=${encodeURIComponent(topic)}`)
+  }
+
+  return (
+    <div className="w-full h-30 flex p-6">
+
+      <div className="flex-6 px-12 py-4">
+        <p className="mb-3 text-sm font-semibold tracking-wide text-indigo-600">
           ✦ OPEN SOURCE DISCOVERY
         </p>
 
@@ -22,62 +46,50 @@ const HeroBanner = () => {
           start your open source journey today.
         </p>
 
-
-        {/* Search */}
         <div className="flex w-full max-w-2xl mt-7">
 
-        <div className="flex flex-1 items-center h-12 px-4 bg-white border border-gray-200 rounded-l-xl shadow-sm">
+          <div className="flex flex-1 items-center h-12 px-4 bg-white border border-gray-200 rounded-l-xl shadow-sm">
+            <Search className="w-5 h-5 mr-3 text-gray-400 shrink-0"/>
 
-          <Search className="w-5 h-5 mr-3 text-gray-400 shrink-0" />
+            <input
+              type="text"
+              placeholder="Search repositories, topics, or languages..."
+              className="w-full text-sm text-gray-700 bg-transparent outline-none placeholder:text-gray-400"
+            />
+          </div>
 
-          <input
-            type="text"
-            placeholder="Search repositories, topics, or languages..."
-            className="w-full text-sm text-gray-700 bg-transparent outline-none placeholder:text-gray-400"
-          />
+          <button
+            className="h-12 px-7 font-medium text-white bg-indigo-600 rounded-r-xl hover:bg-indigo-700 transition"
+          >
+            Search
+          </button>
 
         </div>
 
-        <button className="h-12 px-7 font-medium text-white bg-indigo-600 rounded-r-xl hover:bg-indigo-700 transition">
-          Search
-        </button>
-
-      </div>
-
-        {/* Trending */}
         <div className="flex flex-wrap items-center gap-2 mt-5">
 
           <span className="mr-1 text-sm text-gray-500">
             Trending:
           </span>
 
-          <span className="px-3 py-1 text-xs text-indigo-600 bg-white border border-gray-200 rounded-full">
-            React
-          </span>
-
-          <span className="px-3 py-1 text-xs text-indigo-600 bg-white border border-gray-200 rounded-full">
-            JavaScript
-          </span>
-
-          <span className="px-3 py-1 text-xs text-indigo-600 bg-white border border-gray-200 rounded-full">
-            Python
-          </span>
-
-          <span className="px-3 py-1 text-xs text-indigo-600 bg-white border border-gray-200 rounded-full">
-            Web
-          </span>
-
-          <span className="px-3 py-1 text-xs text-indigo-600 bg-white border border-gray-200 rounded-full">
-            Good First Issue
-          </span>
+          {trendingTopics.map((topic) => (
+            <button
+              key={topic}
+              onClick={() => searchTopic(topic)}
+              className="px-3 py-1 text-xs text-indigo-600 bg-white border border-gray-200 rounded-full hover:bg-indigo-50 hover:border-indigo-200 transition"
+            >
+              {topic}
+            </button>
+          ))}
 
         </div>
       </div>
-      <div className='flex-3'>
+
+      <div className="hidden lg:flex flex-3">
         <img
           src={gitfinal}
           alt=""
-          className="  w-full py-10 object-contain  mix-blend-multiply"
+          className="w-full py-10 object-contain mix-blend-multiply"
         />
       </div>
 
