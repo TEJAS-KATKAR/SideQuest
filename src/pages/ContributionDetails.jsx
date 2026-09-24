@@ -1,5 +1,6 @@
 import React, {useEffect, useState} from 'react'
 import {useNavigate, useParams} from 'react-router-dom'
+import API_BASE from '../config/api'
 import {
   ArrowUpRight,
   Check,
@@ -74,7 +75,7 @@ const ContributionDetails = () => {
       try {
         const response =
           await fetch(
-            `http://localhost:5000/api/contributions/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/${issueNumber}`,
+            `${API_BASE}/api/contributions/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/${issueNumber}`,
             {
               signal:
                 controller.signal

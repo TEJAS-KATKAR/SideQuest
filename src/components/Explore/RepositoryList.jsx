@@ -1,5 +1,6 @@
 import React, {useEffect, useState} from 'react'
 import RepositoryCard from './RepositoryCard'
+import API_BASE from '../../config/api'
 
 const formatTotalRepositories = number => {
   const value = Number(number) || 0
@@ -100,7 +101,7 @@ const RepositoryList = ({
         }
 
         const response = await fetch(
-          `http://localhost:5000/api/repositories/search?${params}`,
+          `${API_BASE}/api/repositories/search?${params}`,
           {
             signal: controller.signal
           }

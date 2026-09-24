@@ -1,10 +1,13 @@
-import React, {useState} from 'react'
+import {useState} from 'react'
 import {Menu, Bell, Sun, ChevronDown} from 'lucide-react'
 import Profile from './profile'
+import {useAuth} from '../../auth/AuthContext'
+import AnimalAvatar from '../Auth/AnimalAvatar'
 
 const TopBar = ({onMenuClick}) => {
   const [profileOpen, setProfileOpen] = useState(false)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
+  const {user} = useAuth()
 
   return (
     <div className="relative z-30 flex items-center justify-between w-full h-14 px-5 md:px-8 lg:px-10 bg-white shadow-sm">
@@ -31,13 +34,15 @@ const TopBar = ({onMenuClick}) => {
           onClick={() => setProfileOpen(!profileOpen)}
           className={`flex gap-1 justify-center items-center rounded-full border px-2 py-1 cursor-pointer transition-all duration-200 ${profileOpen ? 'border-gray-300 bg-gray-50 scale-95' : 'border-transparent hover:border-gray-400 hover:bg-gray-50 hover:scale-95 shadow-inner'}`}
         >
-          <div className="flex items-center justify-center size-9 rounded-full bg-gray-400 text-lg font-semibold text-white">G</div>
-          <span className="hidden text-md font-semibold sm:inline">Guest</span>
+          <div className="flex size-9 items-center justify-center overflow-hidden rounded-full bg-gray-200 text-lg font-semibold text-white">
+            {user ? <AnimalAvatar type={user.avatar} size={36} /> : 'G'}
+          </div>
+          <span className="hidden text-md font-semibold sm:inline">{user?.username || 'Guest'}</span>
           <ChevronDown size={18} className={`transition-transform duration-200 ${profileOpen ? 'rotate-180' : ''}`} />
         </button>
       </div>
 
-      {profileOpen && <Profile onClose={() => setProfileOpen(false)} />}
+      {profileOpen && <Profile user={user} onClose={() => setProfileOpen(false)} />}
     </div>
   )
 }

@@ -227,30 +227,32 @@ const IssueCard = ({issue}) => {
           </div>
 
           <div className="mt-2 pt-2.5 border-t border-gray-100">
-            <div className="flex items-center flex-wrap gap-x-5 gap-y-2 text-[12px] text-gray-500">
-              <span className="flex items-center gap-1">
-                <Star className="size-4" />
-                {formatNumber(issue.stars)}
+            <div className="grid grid-cols-3 gap-x-4 gap-y-2 text-[12px] text-gray-500">
+              <span className="flex items-center gap-1 min-w-0">
+                <Star className="size-4 shrink-0" />
+                <span className="truncate">{formatNumber(issue.stars)}</span>
               </span>
 
-              <span className="hidden sm:flex items-center gap-1">
-                <GitFork className="size-4" />
-                {formatNumber(issue.forks)}
+              <span className="flex items-center gap-1 min-w-0">
+                <GitFork className="size-4 shrink-0" />
+                <span className="truncate">{formatNumber(issue.forks)}</span>
               </span>
 
-              <span className="hidden md:flex items-center gap-1">
-                <Eye className="size-4" />
-                {formatNumber(issue.watchers)}
+              <span className="flex items-center gap-1 min-w-0">
+                <MessageCircle className="size-4 shrink-0" />
+                <span className="truncate">{issue.comments ?? 0}</span>
               </span>
 
-              <span className="flex items-center gap-1">
-                <MessageCircle className="size-4" />
-                {issue.comments ?? 0}
+              <span className="flex items-center gap-1 min-w-0">
+                <BarChart3 className="size-4 text-green-500 shrink-0" />
+                <span className="truncate font-semibold text-gray-800">
+                  {issue.activity || 'Unknown'}
+                </span>
               </span>
 
-              <span className="flex items-center gap-1.5 font-semibold text-gray-800">
-                <BarChart3 className="size-4 text-green-500" />
-                {issue.activity || 'Unknown'}
+              <span className="flex items-center gap-1 min-w-0">
+                <Eye className="size-4 shrink-0" />
+                <span className="truncate">{formatNumber(issue.watchers)}</span>
               </span>
             </div>
 
@@ -261,7 +263,9 @@ const IssueCard = ({issue}) => {
                 {issue.language || 'Unknown'}
               </span>
 
-              <TagOverflow items={issue.technologies} visible={2} variant="technology" />
+              <div className="min-w-0 overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden">
+                <TagOverflow items={issue.technologies} visible={2} variant="technology" />
+              </div>
             </div>
           </div>
         </div>
@@ -338,53 +342,61 @@ const IssueCard = ({issue}) => {
                 {issue.difficulty || 'Easy'}
               </span>
 
-              <span className="flex items-center gap-1.5 px-3 py-2 text-[13px] font-semibold text-indigo-700 bg-indigo-50 rounded-xl">
-                <Settings className="size-4" />
-                {issue.type || 'General'}
+              <span className="flex items-center gap-1.5 px-3 py-2 text-[13px] font-semibold text-indigo-700 bg-indigo-50 rounded-xl min-w-0">
+                <Settings className="size-4 shrink-0" />
+                <span className="truncate">{issue.type || 'General'}</span>
               </span>
             </div>
 
-            <div className="flex flex-col gap-3 mt-6">
-              <span className="text-[13px] font-medium text-gray-500">
-                #{issue.number}
-              </span>
+            <span className="block mt-5 text-[13px] font-medium text-gray-500">
+              #{issue.number}
+            </span>
 
-              <div className="flex items-center gap-2 text-[12px] text-gray-500">
-                <Clock3 className="size-4" />
-                Opened {issue.opened || 'Unknown'}
-              </div>
+            <div className="grid grid-cols-3 gap-4 mt-5">
+              <div className="flex flex-col gap-3">
+                <p className="text-[12px] font-semibold text-gray-800">
+                  Issue details
+                </p>
 
-              <div className="flex items-center gap-2 text-[12px] text-gray-500">
-                <Clock3 className="size-4" />
-                Updated {issue.updated || 'Unknown'}
-              </div>
-
-              <div className="flex items-center gap-2 text-[12px] text-gray-500">
-                <UserRound className="size-4" />
-                {issue.assignment || 'Unassigned'}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-1.5 mt-4">
-              <Sparkles className="size-4 text-yellow-500" />
-              <p className="text-[13px] font-semibold text-gray-900">Why this fits:</p>
-              <Info className="size-3.5 text-gray-400" />
-            </div>
-
-            <div className="flex flex-col gap-2 mt-2">
-              {(issue.reasons || []).map(reason => (
-                <div key={reason} className="flex items-start gap-2">
-                  <CheckCircle2 className="size-4 mt-0.5 text-white fill-green-500 shrink-0" />
-                  <span className="text-[11px] leading-4 text-gray-600">
-                    {reason}
-                  </span>
+                <div className="flex items-center gap-2 text-[11px] text-gray-500">
+                  <Clock3 className="size-4 shrink-0" />
+                  <span className="truncate">Opened {issue.opened || 'Unknown'}</span>
                 </div>
-              ))}
+
+                <div className="flex items-center gap-2 text-[11px] text-gray-500">
+                  <Clock3 className="size-4 shrink-0" />
+                  <span className="truncate">Updated {issue.updated || 'Unknown'}</span>
+                </div>
+
+                <div className="flex items-center gap-2 text-[11px] text-gray-500">
+                  <UserRound className="size-4 shrink-0" />
+                  <span className="truncate">{issue.assignment || 'Unassigned'}</span>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-3 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <Sparkles className="size-4 text-yellow-500 shrink-0" />
+                  <p className="text-[12px] font-semibold text-gray-900">Why this fits:</p>
+                  <Info className="size-3.5 text-gray-400 shrink-0" />
+                </div>
+
+                <div className="flex flex-col gap-2.5">
+                  {(issue.reasons || []).slice(0, 3).map(reason => (
+                    <div key={reason} className="flex items-start gap-2">
+                      <CheckCircle2 className="size-4 mt-0.5 text-white fill-green-500 shrink-0" />
+                      <span className="text-[11px] leading-4 text-gray-600">
+                        {reason}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
 
             <button
               onClick={handleOpportunity}
-              className="flex items-center justify-center w-full h-10 gap-2 mt-4 text-xs font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 active:bg-indigo-800 transition"
+              className="flex items-center justify-center w-full h-10 gap-2 mt-5 text-xs font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 active:bg-indigo-800 transition"
             >
               View opportunity
               <ArrowRight className="size-4" />

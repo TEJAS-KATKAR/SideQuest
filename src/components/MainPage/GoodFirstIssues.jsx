@@ -1,6 +1,7 @@
 import React, {useEffect, useState} from 'react'
 import {CircleDot, ExternalLink, ArrowRight} from 'lucide-react'
 import {useNavigate} from 'react-router-dom'
+import API_BASE from '../../config/api'
 
 const IssueSkeleton = () => {
   return (
@@ -44,7 +45,7 @@ const GoodFirstIssues = () => {
         params.set('per_page', '4')
 
         const response = await fetch(
-          `http://localhost:5000/api/contributions/search?${params.toString()}`,
+          `${API_BASE}/api/contributions/search?${params.toString()}`,
           {signal: controller.signal}
         )
 

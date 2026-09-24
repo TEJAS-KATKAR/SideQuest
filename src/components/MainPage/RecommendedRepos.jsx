@@ -1,6 +1,7 @@
 import React, {useEffect, useState} from 'react'
 import {GitFork, Star, ArrowRight, ExternalLink} from 'lucide-react'
 import {useNavigate} from 'react-router-dom'
+import API_BASE from '../../config/api'
 
 const formatNumber = number => {
   const value = Number(number) || 0
@@ -60,7 +61,7 @@ const RecommendedRepos = () => {
         params.set('sortOrder', 'desc')
 
         const response = await fetch(
-          `http://localhost:5000/api/repositories/search?${params.toString()}`,
+          `${API_BASE}/api/repositories/search?${params.toString()}`,
           {signal: controller.signal}
         )
 

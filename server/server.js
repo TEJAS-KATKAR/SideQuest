@@ -1,20 +1,32 @@
 const {createContributionRouter} = require('./routes/contributions')
 const express = require('express')
 const cors = require('cors')
-require('dotenv').config()
+const path = require('path')
+const {parsed: envFile = {}} = require('dotenv').config({
+  path: path.join(__dirname, '.env')
+})
 
 const app = express()
-const PORT = 5000
+const PORT = Number(process.env.PORT) || 5000
 
-app.use(cors())
+const getEnvironmentValue = key =>
+  process.env[key]?.trim() || envFile[key]?.trim() || ''
+
+const clientOrigin = getEnvironmentValue('CLIENT_ORIGIN') || 'http://localhost:5173'
+
+app.use(cors({origin: clientOrigin, credentials: true}))
 app.use(express.json())
+
+const githubToken =
+  process.env.GITHUB_TOKEN?.trim() ||
+  envFile.GITHUB_TOKEN?.trim()
 
 const githubHeaders = {
   Accept: 'application/vnd.github+json',
   'X-GitHub-Api-Version': '2022-11-28',
   'User-Agent': 'SideQuest',
-  ...(process.env.GITHUB_TOKEN
-    ? {Authorization: `Bearer ${process.env.GITHUB_TOKEN}`}
+  ...(githubToken
+    ? {Authorization: `Bearer ${githubToken}`}
     : {})
 }
 
@@ -252,7 +264,7 @@ app.get('/api/test', (req, res) => {
   res.json({
     success: true,
     message: 'SideQuest backend is working!',
-    authenticated: Boolean(process.env.GITHUB_TOKEN)
+    authenticated: Boolean(githubToken)
   })
 })
 
@@ -261,13 +273,13 @@ app.get('/api/github-status', async (req, res) => {
     const data = await githubRequest('https://api.github.com/rate_limit')
 
     res.json({
-      authenticated: Boolean(process.env.GITHUB_TOKEN),
+      authenticated: Boolean(githubToken),
       core: data.resources?.core || null,
       search: data.resources?.search || null
     })
   } catch (error) {
     res.status(error.status || 500).json({
-      authenticated: Boolean(process.env.GITHUB_TOKEN),
+      authenticated: Boolean(githubToken),
       error: error.message || 'Unable to check GitHub status'
     })
   }
@@ -481,6 +493,7 @@ app.get('/api/repositories/:owner/:repo/contributors', async (req, res) => {
   }
 })
 
-app.listen(PORT, () => {
-  console.log(`SideQuest server running on http://localhost:${PORT}`)
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`GitHub token configured: ${Boolean(githubToken)}`)
+  console.log(`SideQuest server listening on port ${PORT}`)
 })

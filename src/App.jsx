@@ -11,6 +11,9 @@ import Saved from './pages/Saved'
 import HowTo from './pages/HowTo'
 import Settings from './pages/Settings'
 import RepositoryDetails from './pages/RepositoryDetails'
+import SignIn from './pages/SignIn'
+import SignUp from './pages/SignUp'
+import {AuthProvider} from './auth/AuthContext'
 
 const ScrollToTop = () => {
   const {pathname} = useLocation()
@@ -24,22 +27,26 @@ const ScrollToTop = () => {
 
 function App() {
   return (
-    <>
-      <ScrollToTop />
+    <AuthProvider>
+      <>
+        <ScrollToTop />
 
-      <Routes>
-        <Route element={<MainLayout />}>
-          <Route path="/" element={<Home />} />
-          <Route path="/explore" element={<Explore />} />
-          <Route path="/repository/:owner/:repo" element={<RepositoryDetails />} />
-          <Route path="/contributions/:owner/:repo/:issueNumber" element={<ContributionDetails />} />
-          <Route path="/contributions" element={<Contributions />} />
-server.js          <Route path="/saved" element={<Saved />} />
-          <Route path="/howto" element={<HowTo />} />
-          <Route path="/settings" element={<Settings />} />
-        </Route>
-      </Routes>
-    </>
+        <Routes>
+          <Route path="/signin" element={<SignIn />} />
+          <Route path="/signup" element={<SignUp />} />
+          <Route element={<MainLayout />}>
+            <Route path="/" element={<Home />} />
+            <Route path="/explore" element={<Explore />} />
+            <Route path="/repository/:owner/:repo" element={<RepositoryDetails />} />
+            <Route path="/contributions/:owner/:repo/:issueNumber" element={<ContributionDetails />} />
+            <Route path="/contributions" element={<Contributions />} />
+            <Route path="/saved" element={<Saved />} />
+            <Route path="/howto" element={<HowTo />} />
+            <Route path="/settings" element={<Settings />} />
+          </Route>
+        </Routes>
+      </>
+    </AuthProvider>
   )
 }
 

@@ -1,5 +1,6 @@
 import React, {useEffect, useState} from 'react'
 import IssueCard from './IssueCard'
+import API_BASE from '../../config/api'
 
 const IssueList = ({search, filters}) => {
   const [issues, setIssues] = useState([])
@@ -62,7 +63,7 @@ const IssueList = ({search, filters}) => {
         params.set('per_page', '10')
 
         const response = await fetch(
-          `http://localhost:5000/api/contributions/search?${params.toString()}`,
+          `${API_BASE}/api/contributions/search?${params.toString()}`,
           {signal: controller.signal}
         )
 

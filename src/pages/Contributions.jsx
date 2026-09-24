@@ -1,4 +1,4 @@
-import React, {useState} from 'react'
+import {useState} from 'react'
 import ContributionHeader from '../components/Contributions/ContributionHeader'
 import IssueList from '../components/Contributions/IssueList'
 import ContributionSidebar from '../components/Contributions/ContributionSidebar'
@@ -16,11 +16,28 @@ const defaultFilters = {
   beginner: false
 }
 
+const getInitialFilters = () => {
+  try {
+    const settings = JSON.parse(localStorage.getItem('sidequest-settings')) || {}
+    const preferences = settings.contributionPreferences || {}
+
+    return {
+      ...defaultFilters,
+      language: Array.isArray(preferences.languages) ? preferences.languages : [],
+      technology: Array.isArray(preferences.technologies) ? preferences.technologies : [],
+      type: Array.isArray(preferences.types) ? preferences.types : [],
+      beginner: Boolean(preferences.beginner)
+    }
+  } catch {
+    return defaultFilters
+  }
+}
+
 const Contributions = () => {
   const [search, setSearch] = useState('')
   const [submittedSearch, setSubmittedSearch] = useState('')
-  const [filters, setFilters] = useState(defaultFilters)
-  const [mobileDraftFilters, setMobileDraftFilters] = useState(defaultFilters)
+  const [filters, setFilters] = useState(getInitialFilters)
+  const [mobileDraftFilters, setMobileDraftFilters] = useState(getInitialFilters)
   const [filterOpen, setFilterOpen] = useState(false)
 
   const filterCount =

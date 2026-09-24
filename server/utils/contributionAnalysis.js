@@ -11,43 +11,49 @@ const difficultyRank = {
       .filter(Boolean)
       .map(label => label.toLowerCase().trim())
   
-  const getDifficulty = ({labels, comments, body, type, assignment, ageDays}) => {
-    const normalizedLabels = normalizeLabels(labels)
-    const text = `${type} ${body || ''}`.toLowerCase()
-  
-    if (
-      normalizedLabels.includes('good first issue') ||
-      normalizedLabels.includes('beginner-friendly')
-    ) {
-      return 'Beginner'
-    }
-  
-    let score = 0
-  
-    if (comments >= 20) score += 2
-    else if (comments >= 8) score += 1
-  
-    if (body && body.length > 5000) score += 2
-    else if (body && body.length > 2500) score += 1
-  
-    if (
-      normalizedLabels.some(label =>
-        ['security', 'performance', 'architecture', 'refactor'].includes(label)
-      )
-    ) {
-      score += 2
-    }
-  
-    if (text.includes('breaking change')) score += 2
-    if (text.includes('multiple packages')) score += 2
-    if (text.includes('migration')) score += 1
-  
-    if (assignment === 'Assigned') score += 1
-    if (ageDays > 90) score += 1
-  
-    if (score <= 1) return 'Easy'
-    if (score <= 4) return 'Medium'
-    return 'Hard'
+const getDifficulty = ({labels, body}) => {
+  const normalizedLabels = normalizeLabels(labels)
+  const text = (body || '').toLowerCase()
+
+  if (normalizedLabels.some(label => [
+    'good first issue',
+    'good-first-issue',
+    'first issue',
+    'beginner-friendly',
+    'beginner friendly',
+    'beginner'
+  ].includes(label))) {
+    return 'Beginner'
+  }
+
+  let score = 0
+
+  if (body?.length > 12000) score += 2
+  else if (body?.length > 6000) score += 1
+
+  if (
+    normalizedLabels.some(label =>
+      ['security', 'architecture', 'breaking change'].includes(label)
+    )
+  ) {
+    score += 2
+  }
+
+  if (normalizedLabels.some(label =>
+    ['performance', 'refactor', 'refactoring', 'optimization'].includes(label)
+  )) {
+    score += 1
+  }
+
+  if (/breaking change|across multiple packages|multiple packages|entire codebase/.test(text)) {
+    score += 2
+  }
+  if (/migration|architect(?:ure|ural)|large-scale/.test(text)) {
+    score += 2
+  }
+  if (score >= 3) return 'Hard'
+  if (score >= 1) return 'Medium'
+  return 'Easy'
   }
   
   const getIssueType = labels => {
@@ -164,10 +170,14 @@ const difficultyRank = {
     const normalizedLabels = normalizeLabels(labels)
     const reasons = []
   
-    if (
-      normalizedLabels.includes('good first issue') ||
-      normalizedLabels.includes('beginner-friendly')
-    ) {
+    if (normalizedLabels.some(label => [
+      'good first issue',
+      'good-first-issue',
+      'first issue',
+      'beginner-friendly',
+      'beginner friendly',
+      'beginner'
+    ].includes(label))) {
       reasons.push('Marked as a beginner-friendly issue')
     }
   
@@ -238,11 +248,7 @@ const difficultyRank = {
     const activity = getActivity(issue.repository?.pushed_at)
     const difficulty = getDifficulty({
       labels,
-      comments,
-      body,
-      type,
-      assignment,
-      ageDays
+      body
     })
   
     return {

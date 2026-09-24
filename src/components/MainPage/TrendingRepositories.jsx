@@ -1,6 +1,7 @@
 import React, {useEffect, useState} from 'react'
 import {ArrowUpRight, Flame, Search, Star} from 'lucide-react'
 import {useNavigate} from 'react-router-dom'
+import API_BASE from '../../config/api'
 
 const topics = ['All', 'React', 'JavaScript', 'Python', 'AI']
 
@@ -16,7 +17,7 @@ const TrendingRepositories = () => {
         setLoading(true)
 
         const response = await fetch(
-          'http://localhost:5000/api/repositories/search?q=open source&page=1&per_page=5&sortMetric=stars&sortOrder=desc'
+          `${API_BASE}/api/repositories/search?q=open source&page=1&per_page=5&sortMetric=stars&sortOrder=desc`
         )
 
         if (!response.ok) throw new Error('Failed to fetch trending repositories')

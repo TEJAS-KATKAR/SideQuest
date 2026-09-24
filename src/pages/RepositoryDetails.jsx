@@ -1,6 +1,7 @@
 import React, {useEffect, useState} from 'react'
 import {ArrowUpRight, BookOpen, Check, ChevronRight, CircleDot, Code2, Copy, Eye, ExternalLink, GitBranch, Globe, Heart, Play, Scale, Star, Users, Watch} from 'lucide-react'
 import {useNavigate, useParams} from 'react-router-dom'
+import API_BASE from '../config/api'
 
 const RepositoryDetails = () => {
   const {owner, repo} = useParams()
@@ -36,7 +37,7 @@ const RepositoryDetails = () => {
         setLoading(true)
         setError('')
 
-        const baseUrl = `http://localhost:5000/api/repositories/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`
+        const baseUrl = `${API_BASE}/api/repositories/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`
 
         const repositoryData = await fetchJson(baseUrl)
 
