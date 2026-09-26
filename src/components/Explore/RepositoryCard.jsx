@@ -67,7 +67,7 @@ const RepositoryCard = ({repo}) => {
               {repo.description || 'No description available.'}
             </p>
 
-            <div className="flex items-center gap-1.5 sm:gap-2 mt-2 sm:mt-3 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="flex items-center gap-1.5 sm:gap-2 mt-2 sm:mt-3 overflow-x-auto pb-0.5 scrollbar-none [&::-webkit-scrollbar]:hidden">
 
               <span className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1 text-[10px] sm:text-xs font-medium text-gray-600 bg-gray-100 rounded-full whitespace-nowrap shrink-0">
                 <span className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${repo.languageColor || 'bg-gray-400'}`}></span>
