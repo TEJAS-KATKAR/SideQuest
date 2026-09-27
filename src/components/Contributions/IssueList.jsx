@@ -11,9 +11,11 @@ const IssueList = ({search, filters}) => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
+  const filterKey = JSON.stringify(filters)
+
   useEffect(() => {
     setPage(1)
-  }, [search, filters])
+  }, [search, filterKey])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -33,10 +35,6 @@ const IssueList = ({search, filters}) => {
         filters.technology.forEach(value => params.append('technology', value))
         filters.labels.forEach(value => params.append('labels', value))
         filters.type.forEach(value => params.append('type', value))
-
-        if (filters.difficulty !== 'All') {
-          params.set('difficulty', filters.difficulty)
-        }
 
         if (filters.activity !== 'All') {
           params.set('activity', filters.activity)
@@ -60,7 +58,9 @@ const IssueList = ({search, filters}) => {
 
         params.set('sort', sort)
         params.set('page', String(page))
-        params.set('per_page', '10')
+        // Pull a larger candidate window before applying repository metadata
+        // filters (activity and technology), then show ten issues per page.
+        params.set('per_page', '100')
 
         const response = await fetch(
           `${API_BASE}/api/contributions/search?${params.toString()}`,
@@ -94,7 +94,7 @@ const IssueList = ({search, filters}) => {
     fetchContributions()
 
     return () => controller.abort()
-  }, [search, filters, sort, page])
+  }, [search, filterKey, sort, page])
 
   const handlePageChange = newPage => {
     setPage(newPage)
@@ -144,7 +144,6 @@ const IssueList = ({search, filters}) => {
           <option>Recently opened</option>
           <option>Recently updated</option>
           <option>Most active</option>
-          <option>Lowest difficulty</option>
         </select>
       </div>
 

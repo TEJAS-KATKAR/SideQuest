@@ -4,6 +4,7 @@ import Otherinfo from '../components/Analytics/Otherinfo'
 import RecommendedRepos from '../components/MainPage/RecommendedRepos'
 import GoodFirstIssues from '../components/MainPage/GoodFirstIssues'
 import TrendingRepositories from '../components/MainPage/TrendingRepositories'
+import Moreinit from '../components/MainPage/Moreinit'
 
 const Home = () => {
   return (
@@ -12,6 +13,7 @@ const Home = () => {
         <div className="flex-1 min-w-0">
           <div className="min-h-93.5">
             <HeroBanner />
+            
           </div>
 
           <RecommendedRepos />
@@ -24,6 +26,7 @@ const Home = () => {
 
         <Otherinfo />
       </div>
+        <Moreinit/>
     </div>
   )
 }

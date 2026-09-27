@@ -23,6 +23,24 @@ const IssueSkeleton = () => {
   )
 }
 
+// These repository searches are stable fallback destinations. They open
+// GitHub's live open issue list, so we never present stale issue numbers.
+const curatedIssueFallbacks = [
+  {owner: 'facebook', repo: 'react', language: 'JavaScript'},
+  {owner: 'vercel', repo: 'next.js', language: 'TypeScript'},
+  {owner: 'microsoft', repo: 'vscode', language: 'TypeScript'},
+  {owner: 'kubernetes', repo: 'kubernetes', language: 'Go'}
+].map(({owner, repo, language}) => ({
+  id: `curated-${owner}-${repo}`,
+  owner,
+  repositoryName: repo,
+  repo: `${owner}/${repo}`,
+  title: `Browse open good first issues in ${repo}`,
+  labels: ['good first issue'],
+  language,
+  fallbackUrl: `https://github.com/${owner}/${repo}/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22`
+}))
+
 const GoodFirstIssues = () => {
   const [issues, setIssues] = useState([])
   const [loading, setLoading] = useState(true)
@@ -39,6 +57,8 @@ const GoodFirstIssues = () => {
       try {
         const params = new URLSearchParams()
 
+        // Let the API's beginner filter include common label variants and
+        // keep the home feed restricted to currently open issues.
         params.set('beginner', 'true')
         params.set('sort', 'Best match')
         params.set('page', '1')
@@ -55,12 +75,13 @@ const GoodFirstIssues = () => {
           throw new Error(data?.error || 'Failed to load issues')
         }
 
-        setIssues((data.issues || []).slice(0, 4))
+        const results = (data.issues || []).slice(0, 4)
+        setIssues(results.length ? results : curatedIssueFallbacks)
       } catch (error) {
         if (error.name === 'AbortError') return
 
-        console.error('Good first issues error:', error)
-        setError(error.message || 'Unable to load issues.')
+        console.error('Good first issues API failed; using curated links:', error)
+        setIssues(curatedIssueFallbacks)
       } finally {
         if (!controller.signal.aborted) {
           setLoading(false)
@@ -131,7 +152,9 @@ const GoodFirstIssues = () => {
                 />
 
                 <button
-                  onClick={() => navigate(`/contributions/${owner}/${repositoryName}/${issue.number}`)}
+                  onClick={() => issue.fallbackUrl
+                    ? window.open(issue.fallbackUrl, '_blank', 'noopener,noreferrer')
+                    : navigate(`/contributions/${owner}/${repositoryName}/${issue.number}`)}
                   className="flex-1 min-w-0 text-left"
                 >
                   <p className="text-sm font-medium text-gray-900 truncate hover:text-indigo-600">
@@ -155,7 +178,9 @@ const GoodFirstIssues = () => {
                 </div>
 
                 <button
-                  onClick={() => navigate(`/contributions/${owner}/${repositoryName}/${issue.number}`)}
+                  onClick={() => issue.fallbackUrl
+                    ? window.open(issue.fallbackUrl, '_blank', 'noopener,noreferrer')
+                    : navigate(`/contributions/${owner}/${repositoryName}/${issue.number}`)}
                   className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-indigo-600 shrink-0"
                   aria-label="View issue"
                 >

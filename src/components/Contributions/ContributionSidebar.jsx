@@ -124,8 +124,6 @@ const ContributionSidebar = ({filters, setFilters, mobileMode = false, onClose})
     'hacktoberfest'
   ]
 
-  const difficulties = ['Beginner', 'Easy', 'Medium', 'Hard']
-
   const issueTypes = [
     'Bug fix',
     'Feature',
@@ -230,7 +228,6 @@ const ContributionSidebar = ({filters, setFilters, mobileMode = false, onClose})
     const resetState = {
       language: [],
       technology: [],
-      difficulty: 'All',
       labels: [],
       type: [],
       activity: 'All',
@@ -253,7 +250,6 @@ const ContributionSidebar = ({filters, setFilters, mobileMode = false, onClose})
     (draftFilters.technology?.length || 0) +
     (draftFilters.labels?.length || 0) +
     (draftFilters.type?.length || 0) +
-    (draftFilters.difficulty !== 'All' ? 1 : 0) +
     (draftFilters.activity !== 'All' ? 1 : 0) +
     (draftFilters.assignment !== 'All' ? 1 : 0) +
     (draftFilters.issueAge !== 'All' ? 1 : 0) +
@@ -429,36 +425,6 @@ const ContributionSidebar = ({filters, setFilters, mobileMode = false, onClose})
               setLanguageSearch,
               'Search languages...'
             )}
-        </div>
-
-        <div className="h-px my-4 bg-gray-100"/>
-
-        <p className="mb-2 text-sm font-semibold text-gray-800">
-          Difficulty
-        </p>
-
-        <div className="grid grid-cols-4 gap-2">
-          {difficulties.map(difficulty => (
-            <button
-              key={difficulty}
-              onClick={() => toggleSingleFilter('difficulty', difficulty)}
-              className={`py-2.5 rounded-md text-xs font-medium transition ${
-                draftFilters.difficulty === difficulty
-                  ? 'ring-2 ring-blue-200'
-                  : ''
-              } ${
-                difficulty === 'Beginner'
-                  ? 'bg-green-50 text-green-600 hover:bg-green-100'
-                  : difficulty === 'Easy'
-                    ? 'bg-blue-50 text-blue-600 hover:bg-blue-100'
-                    : difficulty === 'Medium'
-                      ? 'bg-orange-50 text-orange-600 hover:bg-orange-100'
-                      : 'bg-red-50 text-red-600 hover:bg-red-100'
-              }`}
-            >
-              {difficulty}
-            </button>
-          ))}
         </div>
 
         <div className="h-px my-4 bg-gray-100"/>

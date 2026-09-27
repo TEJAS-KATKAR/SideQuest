@@ -14,7 +14,6 @@ const ContributionFilters = ({filters, setFilters}) => {
     setFilters({
       language: [],
       technology: [],
-      difficulty: 'All',
       labels: [],
       type: [],
       activity: 'All',

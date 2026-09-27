@@ -1,5 +1,5 @@
 import React, {useEffect, useMemo, useState} from 'react'
-import {Search} from 'lucide-react'
+import {Check, Copy, FileCode2, Search, Terminal} from 'lucide-react'
 import HowToHeader from '../components/HowTo/HowToHeader'
 import FAQSection from '../components/HowTo/FAQSection'
 
@@ -171,6 +171,599 @@ const faqSections = [
   }
 ]
 
+const setupGuides = [
+  {
+    name: 'JavaScript',
+    short: 'JS',
+    file: 'package.json',
+    command: 'npm install',
+    code: [
+      'git clone <repository-url>',
+      'cd <project-folder>',
+      'npm install',
+      'npm run dev'
+    ],
+    note: 'For a Node.js or frontend JavaScript project, install the dependencies first and then use the project’s documented development script.'
+  },
+  {
+    name: 'TypeScript',
+    short: 'TS',
+    file: 'package.json',
+    command: 'npm install',
+    code: [
+      'git clone <repository-url>',
+      'cd <project-folder>',
+      'npm install',
+      'npm run dev'
+    ],
+    note: 'TypeScript projects commonly use npm for dependency management. Check package.json for the exact available scripts.'
+  },
+  {
+    name: 'Python',
+    short: 'PY',
+    file: 'requirements.txt',
+    command: 'pip install -r requirements.txt',
+    code: [
+      'git clone <repository-url>',
+      'cd <project-folder>',
+      'python -m venv .venv',
+      '.venv\\Scripts\\activate',
+      'pip install -r requirements.txt',
+      'python main.py'
+    ],
+    note: 'The final command depends on the repository. Look for README instructions or an entry file such as main.py, app.py, or manage.py.'
+  },
+  {
+    name: 'Java',
+    short: 'JAVA',
+    file: 'pom.xml',
+    command: 'mvn install',
+    code: [
+      'git clone <repository-url>',
+      'cd <project-folder>',
+      'mvn install',
+      'mvn spring-boot:run'
+    ],
+    note: 'Maven is common in Java projects. Some projects use Gradle instead, so check for pom.xml or build.gradle.'
+  },
+  {
+    name: 'C',
+    short: 'C',
+    file: 'main.c',
+    command: 'gcc main.c -o app',
+    code: [
+      'git clone <repository-url>',
+      'cd <project-folder>',
+      'gcc main.c -o app',
+      '.\\app'
+    ],
+    note: 'The exact compile command depends on the project structure and build system. Larger projects may use Make or CMake.'
+  },
+  {
+    name: 'C++',
+    short: 'C++',
+    file: 'main.cpp',
+    command: 'g++ main.cpp -o app',
+    code: [
+      'git clone <repository-url>',
+      'cd <project-folder>',
+      'g++ main.cpp -o app',
+      '.\\app'
+    ],
+    note: 'For larger C++ projects, check whether the repository uses CMake, Make, or another build system instead of compiling one file directly.'
+  },
+  {
+    name: 'C#',
+    short: 'C#',
+    file: 'Project.csproj',
+    command: 'dotnet restore',
+    code: [
+      'git clone <repository-url>',
+      'cd <project-folder>',
+      'dotnet restore',
+      'dotnet build',
+      'dotnet run'
+    ],
+    note: 'The .NET CLI handles dependency restoration, building, and running for many C# projects.'
+  },
+  {
+    name: 'Go',
+    short: 'GO',
+    file: 'go.mod',
+    command: 'go mod download',
+    code: [
+      'git clone <repository-url>',
+      'cd <project-folder>',
+      'go mod download',
+      'go build',
+      'go run .'
+    ],
+    note: 'Go projects normally declare their module in go.mod. Check the repository README for project-specific commands.'
+  },
+  {
+    name: 'Rust',
+    short: 'RS',
+    file: 'Cargo.toml',
+    command: 'cargo build',
+    code: [
+      'git clone <repository-url>',
+      'cd <project-folder>',
+      'cargo build',
+      'cargo run'
+    ],
+    note: 'Cargo manages dependencies and builds Rust projects. Cargo.toml identifies a Cargo-based project.'
+  },
+  {
+    name: 'PHP',
+    short: 'PHP',
+    file: 'composer.json',
+    command: 'composer install',
+    code: [
+      'git clone <repository-url>',
+      'cd <project-folder>',
+      'composer install',
+      'php -S localhost:8000'
+    ],
+    note: 'Many PHP projects use Composer. Framework-based projects may have their own development command.'
+  },
+  {
+    name: 'Ruby',
+    short: 'RB',
+    file: 'Gemfile',
+    command: 'bundle install',
+    code: [
+      'git clone <repository-url>',
+      'cd <project-folder>',
+      'bundle install',
+      'bundle exec ruby app.rb'
+    ],
+    note: 'Ruby projects commonly use Bundler for dependencies. Rails applications normally use bin/rails server instead.'
+  },
+  {
+    name: 'Kotlin',
+    short: 'KT',
+    file: 'build.gradle.kts',
+    command: './gradlew build',
+    code: [
+      'git clone <repository-url>',
+      'cd <project-folder>',
+      './gradlew build',
+      './gradlew run'
+    ],
+    note: 'Kotlin projects commonly use Gradle. Android projects should be opened and run through Android Studio.'
+  },
+  {
+    name: 'Swift',
+    short: 'SWIFT',
+    file: 'Package.swift',
+    command: 'swift build',
+    code: [
+      'git clone <repository-url>',
+      'cd <project-folder>',
+      'swift build',
+      'swift run'
+    ],
+    note: 'Swift Package Manager projects use Package.swift. iOS applications may instead require opening the project in Xcode.'
+  },
+  {
+    name: 'Dart',
+    short: 'DART',
+    file: 'pubspec.yaml',
+    command: 'dart pub get',
+    code: [
+      'git clone <repository-url>',
+      'cd <project-folder>',
+      'dart pub get',
+      'dart run'
+    ],
+    note: 'Flutter projects also use pubspec.yaml but normally run through Flutter commands such as flutter pub get and flutter run.'
+  },
+  {
+    name: 'R',
+    short: 'R',
+    file: 'DESCRIPTION',
+    command: 'R',
+    code: [
+      'git clone <repository-url>',
+      'cd <project-folder>',
+      'R',
+      'source("main.R")'
+    ],
+    note: 'R projects can use different dependency and project-management systems. Check the repository documentation before running scripts.'
+  },
+  {
+    name: 'Shell',
+    short: 'SH',
+    file: 'script.sh',
+    command: 'chmod +x script.sh',
+    code: [
+      'git clone <repository-url>',
+      'cd <project-folder>',
+      'chmod +x script.sh',
+      './script.sh'
+    ],
+    note: 'Shell scripts are platform-dependent. Read the repository instructions before executing scripts you downloaded.'
+  },
+  {
+    name: 'HTML / CSS',
+    short: 'WEB',
+    file: 'index.html',
+    command: 'Open index.html',
+    code: [
+      'git clone <repository-url>',
+      'cd <project-folder>',
+      'code .',
+      'Open index.html',
+      'Use Live Server if required'
+    ],
+    note: 'Simple HTML and CSS projects may not need a package manager. Larger frontend projects may use a JavaScript build tool instead.'
+  },
+  {
+    name: 'SQL',
+    short: 'SQL',
+    file: 'schema.sql',
+    command: 'Run with your database client',
+    code: [
+      'git clone <repository-url>',
+      'cd <project-folder>',
+      'Open your database client',
+      'Connect to the required database',
+      'Run schema.sql'
+    ],
+    note: 'SQL repositories depend on the database engine being used, such as PostgreSQL, MySQL, or SQLite. Follow the project README for the correct setup.'
+  }
+]
+
+const ProjectSetup = () => {
+  const [selectedLanguage, setSelectedLanguage] = useState(setupGuides[0])
+  const [copied, setCopied] = useState(false)
+
+  const copyCode = async () => {
+    try {
+      await navigator.clipboard.writeText(selectedLanguage.code.join('\n'))
+      setCopied(true)
+
+      setTimeout(() => {
+        setCopied(false)
+      }, 1600)
+    } catch {
+      setCopied(false)
+    }
+  }
+
+  return (
+    <section className="mt-8">
+      <div className="mb-3">
+        <h2 className="text-[19px] font-bold text-gray-900">
+          Get a Project Running
+        </h2>
+
+        <p className="mt-1 text-[13px] text-gray-500">
+          Found a project on SideQuest? Use these steps to bring it onto your machine and start working on it.
+        </p>
+      </div>
+
+      <div className="overflow-hidden bg-white border border-gray-200 rounded-xl shadow-sm">
+        <div className="flex flex-col min-w-0 md:flex-row min-h-140">
+
+          <div className="w-full md:w-[32%] shrink-0 border-b md:border-b-0 md:border-r border-gray-200 bg-[#fafbff]">
+            <div className="px-4 py-3 border-b border-gray-200">
+              <p className="text-[11px] font-semibold tracking-wide text-gray-500 uppercase">
+                Choose your stack
+              </p>
+
+              <p className="mt-1 text-xs text-gray-400">
+                Select a language to see a starting setup.
+              </p>
+            </div>
+
+            <div className="p-2 grid grid-cols-2 md:grid-cols-1 gap-1 max-h-82.5 md:max-h-127.5 overflow-y-auto">
+              {setupGuides.map(language => {
+                const active = selectedLanguage.name === language.name
+
+                return (
+                  <button
+                    key={language.name}
+                    onClick={() => {
+                      setSelectedLanguage(language)
+                      setCopied(false)
+                    }}
+                    className={`flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg text-left transition-colors ${
+                      active
+                        ? 'bg-indigo-50 text-indigo-700'
+                        : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                    }`}
+                  >
+                    <span className={`flex items-center justify-center size-7 rounded-md text-[9px] font-bold shrink-0 ${
+                      active
+                        ? 'bg-indigo-100 text-indigo-700'
+                        : 'bg-gray-200 text-gray-500'
+                    }`}>
+                      {language.short}
+                    </span>
+
+                    <span className="text-xs font-medium truncate">
+                      {language.name}
+                    </span>
+
+                    {active && (
+                      <Check className="size-3.5 ml-auto shrink-0 text-indigo-600" />
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          <div className="flex-1 min-w-0 bg-[#1e1e1e]">
+            <div className="flex items-center justify-between h-10 px-3 bg-[#252526] border-b border-[#333]">
+              <div className="flex items-center min-w-0 gap-2">
+                <FileCode2 className="size-4 text-blue-400 shrink-0" />
+
+                <span className="text-[11px] text-gray-300 truncate">
+                  {selectedLanguage.file}
+                </span>
+              </div>
+
+              <button
+                onClick={copyCode}
+                className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] text-gray-300 hover:text-white hover:bg-white/10 transition-colors shrink-0"
+              >
+                {copied ? (
+                  <>
+                    <Check className="size-3.5" />
+                    Copied
+                  </>
+                ) : (
+                  <>
+                    <Copy className="size-3.5" />
+                    Copy
+                  </>
+                )}
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2 h-8 px-3 bg-[#2d2d2d] border-b border-[#3a3a3a]">
+              <span className="text-[10px] text-gray-300">
+                {selectedLanguage.file}
+              </span>
+            </div>
+
+            <div className="px-3 py-4 overflow-x-auto">
+              <div className="min-w-max font-mono text-[11px] leading-6">
+                {selectedLanguage.code.map((line, index) => (
+                  <div key={`${selectedLanguage.name}-${index}`} className="flex">
+                    <span className="w-8 pr-3 text-right text-[#6e7681] select-none">
+                      {index + 1}
+                    </span>
+
+                    <span className="text-[#d4d4d4] whitespace-pre">
+                      {line}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="mx-3 mb-3 rounded-lg overflow-hidden border border-[#3a3a3a] bg-[#181818]">
+              <div className="flex items-center gap-2 h-8 px-3 border-b border-[#333]">
+                <Terminal className="size-3.5 text-gray-400" />
+
+                <span className="text-[10px] text-gray-400">
+                  TERMINAL
+                </span>
+              </div>
+
+              <div className="px-3 py-3 font-mono text-[10px] leading-5 overflow-x-auto">
+                <div className="text-gray-500">
+                  ~/project
+                </div>
+
+                <div className="text-green-400 whitespace-nowrap">
+                  $ {selectedLanguage.command}
+                </div>
+
+                <div className="mt-1 text-gray-500">
+                  Follow the repository README for project-specific setup.
+                </div>
+              </div>
+            </div>
+
+            <div className="px-3 pb-4">
+              <div className="px-3 py-2.5 rounded-lg bg-[#252526] border border-[#3a3a3a]">
+                <p className="text-[10px] font-medium text-gray-300">
+                  Note
+                </p>
+
+                <p className="mt-1 text-[10px] leading-4 text-gray-500">
+                  {selectedLanguage.note}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+const ContributionGuide = () => {
+  const [copied, setCopied] = useState(false)
+
+  const code = [
+    'git clone <your-fork-url>',
+    'cd <project-folder>',
+    '',
+    'git checkout -b fix-issue-123',
+    '',
+    '# make your changes',
+    '',
+    '# run the project tests',
+    '',
+    'git add .',
+    'git commit -m "Fix issue #123"',
+    'git push origin fix-issue-123'
+  ]
+
+  const copyCode = async () => {
+    try {
+      await navigator.clipboard.writeText(code.join('\n'))
+      setCopied(true)
+
+      setTimeout(() => {
+        setCopied(false)
+      }, 1600)
+    } catch {
+      setCopied(false)
+    }
+  }
+
+  return (
+    <section className="mt-8">
+      <div className="mb-3">
+        <h2 className="text-[19px] font-bold text-gray-900">
+          Contribution Guide
+        </h2>
+
+        <p className="mt-1 text-[13px] text-gray-500">
+          Follow the same Git and GitHub workflow to turn an opportunity into a real contribution.
+        </p>
+      </div>
+
+      <div className="overflow-hidden bg-white border border-gray-200 rounded-xl shadow-sm">
+        <div className="flex flex-col min-w-0 md:flex-row min-h-140">
+          <div className="w-full md:w-[32%] shrink-0 border-b md:border-b-0 md:border-r border-gray-200 bg-[#fafbff]">
+            <div className="px-4 py-3 border-b border-gray-200">
+              <p className="text-[11px] font-semibold tracking-wide text-gray-500 uppercase">
+                Contribution workflow
+              </p>
+
+              <p className="mt-1 text-xs text-gray-400">
+                The Git steps are the same regardless of the language.
+              </p>
+            </div>
+
+            <div className="p-3">
+              {[
+                ['01', 'Fork the repository', 'Create your own GitHub copy of the project.'],
+                ['02', 'Clone your fork', 'Download your fork to your computer.'],
+                ['03', 'Create a branch', 'Keep your contribution separate from main.'],
+                ['04', 'Make changes', 'Work on the issue you selected.'],
+                ['05', 'Test your changes', 'Make sure your changes work correctly.'],
+                ['06', 'Commit & push', 'Save your work and send the branch to GitHub.'],
+                ['07', 'Open a Pull Request', 'Ask the maintainers to review your contribution.']
+              ].map(([number, title, description]) => (
+                <div key={number} className="flex gap-3 px-2 py-2.5">
+                  <span className="flex items-center justify-center size-7 rounded-md bg-indigo-50 text-[9px] font-bold text-indigo-600 shrink-0">
+                    {number}
+                  </span>
+
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-gray-800">
+                      {title}
+                    </p>
+
+                    <p className="mt-0.5 text-[10px] leading-4 text-gray-500">
+                      {description}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex-1 min-w-0 bg-[#1e1e1e]">
+            <div className="flex items-center justify-between h-10 px-3 bg-[#252526] border-b border-[#333]">
+              <div className="flex items-center min-w-0 gap-2">
+                <FileCode2 className="size-4 text-blue-400 shrink-0" />
+
+                <span className="text-[11px] text-gray-300 truncate">
+                  contribution.sh
+                </span>
+              </div>
+
+              <button
+                onClick={copyCode}
+                className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] text-gray-300 hover:text-white hover:bg-white/10 transition-colors shrink-0"
+              >
+                {copied ? (
+                  <>
+                    <Check className="size-3.5" />
+                    Copied
+                  </>
+                ) : (
+                  <>
+                    <Copy className="size-3.5" />
+                    Copy
+                  </>
+                )}
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2 h-8 px-3 bg-[#2d2d2d] border-b border-[#3a3a3a]">
+              <span className="text-[10px] text-gray-300">
+                contribution.sh
+              </span>
+            </div>
+
+            <div className="px-3 py-4 overflow-x-auto">
+              <div className="min-w-max font-mono text-[11px] leading-6">
+                {code.map((line, index) => (
+                  <div key={index} className="flex">
+                    <span className="w-8 pr-3 text-right text-[#6e7681] select-none">
+                      {index + 1}
+                    </span>
+
+                    <span className="text-[#d4d4d4] whitespace-pre">
+                      {line}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="mx-3 mb-3 rounded-lg overflow-hidden border border-[#3a3a3a] bg-[#181818]">
+              <div className="flex items-center gap-2 h-8 px-3 border-b border-[#333]">
+                <Terminal className="size-3.5 text-gray-400" />
+
+                <span className="text-[10px] text-gray-400">
+                  TERMINAL
+                </span>
+              </div>
+
+              <div className="px-3 py-3 font-mono text-[10px] leading-5 overflow-x-auto">
+                <div className="text-gray-500">
+                  ~/project
+                </div>
+
+                <div className="text-green-400 whitespace-nowrap">
+                  $ git push origin fix-issue-123
+                </div>
+
+                <div className="mt-1 text-gray-500">
+                  Branch pushed successfully. Open GitHub to create your Pull Request.
+                </div>
+              </div>
+            </div>
+
+            <div className="px-3 pb-4">
+              <div className="px-3 py-2.5 rounded-lg bg-[#252526] border border-[#3a3a3a]">
+                <p className="text-[10px] font-medium text-gray-300">
+                  Remember
+                </p>
+
+                <p className="mt-1 text-[10px] leading-4 text-gray-500">
+                  Always read the repository README and contribution guidelines before making changes. The project may require specific setup, testing, formatting, or branch rules.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 const HowTo = () => {
   const [search, setSearch] = useState('')
   const [initialQuestion, setInitialQuestion] = useState(null)
@@ -193,14 +786,14 @@ const HowTo = () => {
 
   useEffect(() => {
     const hash = window.location.hash.slice(1)
-  
+
     if (!hash) return
-  
+
     setInitialQuestion(hash)
-  
+
     const timer = setTimeout(() => {
       const element = document.getElementById(hash)
-  
+
       if (element) {
         element.scrollIntoView({
           behavior: 'smooth',
@@ -208,7 +801,7 @@ const HowTo = () => {
         })
       }
     }, 300)
-  
+
     return () => clearTimeout(timer)
   }, [])
 
@@ -221,17 +814,28 @@ const HowTo = () => {
 
       <div className="max-w-4xl min-w-0 mx-auto mt-8">
         {filteredSections.length > 0 ? (
-          filteredSections.map(section => (
-            <FAQSection
-  key={section.title}
-  section={section}
-  initialOpenId={
-    section.title === 'Explore Repositories'
-      ? initialQuestion
-      : null
-  }
-/>
-          ))
+          <>
+            {filteredSections.map(section => (
+              <React.Fragment key={section.title}>
+                <FAQSection
+                  section={section}
+                  initialOpenId={
+                    section.title === 'Explore Repositories'
+                      ? initialQuestion
+                      : null
+                  }
+                />
+
+                {section.title === 'Explore Repositories' && (
+                  <ProjectSetup />
+                )}
+
+                {section.title === 'Contribution Opportunities' && (
+                  <ContributionGuide />
+                )}
+              </React.Fragment>
+            ))}
+          </>
         ) : (
           <div className="flex flex-col items-center justify-center py-16 text-center bg-white border border-gray-200 rounded-2xl">
             <div className="flex items-center justify-center size-12 bg-gray-100 rounded-xl">

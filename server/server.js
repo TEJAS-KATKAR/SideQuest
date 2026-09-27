@@ -201,9 +201,15 @@ const buildSearchQuery = ({
   const queryParts = []
   const cleanSearch = (search || '').trim()
 
-  if (cleanSearch && cleanSearch !== 'open source') {
+if (cleanSearch && cleanSearch !== 'open source') {
+  const parts = cleanSearch.split(/\s+/)
+
+  if (parts.length === 2 && !cleanSearch.includes('/')) {
+    queryParts.push(`${parts[0]}/${parts[1]}`)
+  } else {
     queryParts.push(cleanSearch)
   }
+}
 
   if (languages?.length) {
     languages.forEach(language => {

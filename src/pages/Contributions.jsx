@@ -6,7 +6,6 @@ import ContributionSidebar from '../components/Contributions/ContributionSidebar
 const defaultFilters = {
   language: [],
   technology: [],
-  difficulty: 'All',
   labels: [],
   type: [],
   activity: 'All',
@@ -45,7 +44,6 @@ const Contributions = () => {
     (filters.technology?.length || 0) +
     (filters.labels?.length || 0) +
     (filters.type?.length || 0) +
-    (filters.difficulty !== 'All' ? 1 : 0) +
     (filters.activity !== 'All' ? 1 : 0) +
     (filters.assignment !== 'All' ? 1 : 0) +
     (filters.issueAge !== 'All' ? 1 : 0) +

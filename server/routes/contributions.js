@@ -1,11 +1,11 @@
 const express = require('express')
-const {analyzeContribution, difficultyRank} = require('../utils/contributionAnalysis')
+const {analyzeContribution} = require('../utils/contributionAnalysis')
 
 const router = express.Router()
 
 const technologyTopicMap = {
-  React: ['react'],
-  'Next.js': ['nextjs', 'next'],
+  React: ['react', 'reactjs'],
+  'Next.js': ['nextjs', 'next', 'next-js'],
   Vue: ['vue'],
   Angular: ['angular'],
   'Node.js': ['nodejs'],
@@ -63,6 +63,16 @@ const technologyTopicMap = {
 
 const repositoryCache = new Map()
 const REPOSITORY_CACHE_TIME = 5 * 60 * 1000
+const issueTypeLabelMap = {
+  'Bug fix': ['bug', 'bugfix', 'type: bug'],
+  Feature: ['enhancement', 'feature', 'feature request'],
+  Documentation: ['documentation', 'docs'],
+  Testing: ['testing', 'test', 'tests'],
+  Refactor: ['refactor', 'refactoring'],
+  Performance: ['performance', 'perf', 'optimization'],
+  Accessibility: ['accessibility', 'a11y'],
+  Security: ['security', 'vulnerability']
+}
 
 const getDateString = daysAgo => {
   const date = new Date()
@@ -116,8 +126,10 @@ const buildIssueQuery = ({
   search,
   languages,
   labels,
+  issueTypes,
   assignment,
   issueAge,
+  discussion,
   beginner
 }) => {
   const parts = ['is:issue', 'is:open']
@@ -128,13 +140,27 @@ const buildIssueQuery = ({
     parts.push(cleanSearch)
   }
 
-  languages.forEach(language => {
-    parts.push(`language:${language}`)
-  })
+  // GitHub combines repeated qualifiers with AND. Treat multi-select filters
+  // as alternatives so selecting more than one language or label broadens the
+  // results instead of making the query impossible.
+  if (languages.length === 1) {
+    parts.push(`language:${languages[0]}`)
+  } else if (languages.length > 1) {
+    parts.push(`(${languages.map(language => `language:${language}`).join(' OR ')})`)
+  }
 
-  labels.forEach(label => {
-    parts.push(`label:"${label}"`)
-  })
+  if (labels.length === 1) {
+    parts.push(`label:"${labels[0]}"`)
+  } else if (labels.length > 1) {
+    parts.push(`(${labels.map(label => `label:"${label}"`).join(' OR ')})`)
+  }
+
+  const typeLabels = [...new Set(issueTypes.flatMap(type => issueTypeLabelMap[type] || []))]
+  if (typeLabels.length === 1) {
+    parts.push(`label:"${typeLabels[0]}"`)
+  } else if (typeLabels.length > 1) {
+    parts.push(`(${typeLabels.map(label => `label:"${label}"`).join(' OR ')})`)
+  }
 
   if (assignment === 'Unassigned') {
     parts.push('no:assignee')
@@ -160,6 +186,11 @@ const buildIssueQuery = ({
     parts.push(`created:>=${getDateString(90)}`)
   }
 
+  if (discussion === 'No discussion') parts.push('comments:0')
+  if (discussion === 'Low') parts.push('comments:1..5')
+  if (discussion === 'Medium') parts.push('comments:6..20')
+  if (discussion === 'High') parts.push('comments:>20')
+
   if (beginner) {
     parts.push(
       '(label:"good first issue" OR label:"good-first-issue" OR label:"first issue" OR label:"beginner-friendly" OR label:"beginner friendly" OR label:beginner)'
@@ -174,9 +205,25 @@ const matchesTechnology = (issue, selectedTechnologies) => {
 
   const technologies = issue.technologies || []
 
-  return selectedTechnologies.some(technology =>
-    technologies.includes(technology)
+  const normalized = technologies.map(technology => technology.toLowerCase())
+  return selectedTechnologies.some(technology => normalized.includes(technology.toLowerCase()))
+}
+
+const matchesLanguage = (issue, languages) =>
+  !languages.length || languages.some(language =>
+    language.toLowerCase() === String(issue.language || '').toLowerCase()
   )
+
+const matchesIssueAge = (issue, issueAge) => {
+  if (issueAge === 'All') return true
+  const created = new Date(issue.createdAt).getTime()
+  if (!Number.isFinite(created)) return false
+  const ageDays = Math.max(0, (Date.now() - created) / 86400000)
+  if (issueAge === 'Today') return ageDays < 1
+  if (issueAge === 'Last 7 days') return ageDays <= 7
+  if (issueAge === 'Last 30 days') return ageDays <= 30
+  if (issueAge === 'Last 90 days') return ageDays <= 90
+  return true
 }
 
 const matchesDiscussion = (issue, discussion) => {
@@ -194,17 +241,15 @@ const matchesDiscussion = (issue, discussion) => {
 
 const matchesActivity = (issue, activity) => {
   if (activity === 'All') return true
-  return issue.activity === activity
+  return String(issue.activity || '').toLowerCase() === activity.toLowerCase()
 }
+
+const matchesAssignment = (issue, assignment) =>
+  assignment === 'All' || issue.assignment === assignment
 
 const matchesType = (issue, types) => {
   if (!types.length) return true
   return types.includes(issue.type)
-}
-
-const matchesDifficulty = (issue, difficulty) => {
-  if (difficulty === 'All') return true
-  return issue.difficulty === difficulty
 }
 
 const matchesSearch = (issue, search) => {
@@ -407,9 +452,12 @@ const formatIssue = (issue, repositoryOverride = null) => {
       labels.some(label =>
         [
           'good first issue',
+          'good-first-issue',
           'first issue',
-          'beginner'
-        ].includes(label.toLowerCase())
+          'beginner',
+          'beginner-friendly',
+          'beginner friendly'
+        ].includes(label.toLowerCase().trim())
       ),
 
     verified:
@@ -565,14 +613,6 @@ const sortIssues = (issues, sort) => {
     })
   }
 
-  if (sort === 'Lowest difficulty') {
-    return sorted.sort(
-      (a, b) =>
-        difficultyRank[a.difficulty] -
-        difficultyRank[b.difficulty]
-    )
-  }
-
   return sorted.sort(
     (a, b) =>
       getBestMatchScore(b) -
@@ -583,22 +623,14 @@ const sortIssues = (issues, sort) => {
 const enrichIssues = async (issues, githubRequest) => {
   const repositoryResults = new Map()
 
-  for (const issue of issues) {
-    if (!issue.repositoryApiUrl) continue
-
-    if (repositoryResults.has(issue.repositoryApiUrl)) {
-      continue
-    }
-
-    const repository = await getRepositoryData(
-      issue.repositoryApiUrl,
-      githubRequest
-    )
-
-    repositoryResults.set(
-      issue.repositoryApiUrl,
-      repository
-    )
+  const repositoryUrls = [...new Set(issues.map(issue => issue.repositoryApiUrl).filter(Boolean))]
+  for (let index = 0; index < repositoryUrls.length; index += 10) {
+    const batch = repositoryUrls.slice(index, index + 10)
+    const repositories = await Promise.all(batch.map(async url => [
+      url,
+      await getRepositoryData(url, githubRequest)
+    ]))
+    repositories.forEach(([url, repository]) => repositoryResults.set(url, repository))
   }
 
   return issues.map(issue => {
@@ -633,7 +665,6 @@ const createContributionRouter = ({githubRequest}) => {
         technology,
         labels,
         type,
-        difficulty = 'All',
         activity = 'All',
         assignment = 'All',
         issueAge = 'All',
@@ -676,7 +707,6 @@ const createContributionRouter = ({githubRequest}) => {
         !technologies.length &&
         !issueLabels.length &&
         !issueTypes.length &&
-        difficulty === 'All' &&
         activity === 'All' &&
         assignment === 'All' &&
         issueAge === 'All' &&
@@ -689,14 +719,11 @@ const createContributionRouter = ({githubRequest}) => {
           1
         )
 
-      const perPage =
-        Math.min(
-          Math.max(
-            Number(per_page) || 10,
-            1
-          ),
-          10
-        )
+      const requestedPerPage = Math.max(Number(per_page) || 10, 1)
+      const perPage = Math.min(requestedPerPage, 10)
+      const candidatePageSize = Math.min(requestedPerPage, 100)
+      const sourcePage = Math.floor((currentPage - 1) * perPage / candidatePageSize) + 1
+      const sourceOffset = ((currentPage - 1) * perPage) % candidatePageSize
 
       let searchQuery
       let searchSort
@@ -709,13 +736,18 @@ const createContributionRouter = ({githubRequest}) => {
         searchSort = 'comments'
         searchOrder = 'desc'
       } else {
+        const beginnerOnly =
+          beginner === 'true'
+
         searchQuery = buildIssueQuery({
           search: cleanSearch,
           languages,
           labels: issueLabels,
+          issueTypes,
           assignment,
           issueAge,
-          beginner: beginner === 'true'
+          discussion,
+          beginner: beginnerOnly
         })
 
         searchSort =
@@ -725,17 +757,13 @@ const createContributionRouter = ({githubRequest}) => {
               ? 'updated'
               : 'comments'
 
-        searchOrder =
-          sort === 'Best match' &&
-          ['Beginner', 'Easy'].includes(difficulty)
-            ? 'asc'
-            : 'desc'
+        searchOrder = 'desc'
       }
 
       const params = new URLSearchParams({
         q: searchQuery,
-        page: String(currentPage),
-        per_page: String(perPage),
+        page: String(sourcePage),
+        per_page: String(candidatePageSize),
         sort: searchSort,
         order: searchOrder
       })
@@ -762,13 +790,11 @@ const createContributionRouter = ({githubRequest}) => {
             issue,
             cleanSearch
           ) &&
+          matchesLanguage(issue, languages) &&
+          matchesIssueAge(issue, issueAge) &&
           matchesTechnology(
             issue,
             technologies
-          ) &&
-          matchesDifficulty(
-            issue,
-            difficulty
           ) &&
           matchesType(
             issue,
@@ -778,25 +804,24 @@ const createContributionRouter = ({githubRequest}) => {
             issue,
             activity
           ) &&
+          matchesAssignment(issue, assignment) &&
           matchesDiscussion(
             issue,
             discussion
           ) &&
-          (
-            beginner !== 'true' ||
-            issue.beginner
-          )
+          (beginner !== 'true' || issue.beginner)
         )
 
       }
 
       issues = sortIssues(issues, sort)
 
-      const totalPages =
-        Math.max(
-          Math.ceil(sourceResults / perPage),
-          1
-        )
+      issues = issues.slice(sourceOffset, sourceOffset + perPage)
+
+      const totalPages = Math.min(
+        Math.max(Math.ceil(sourceResults / perPage), 1),
+        100
+      )
 
       const safePage =
         Math.min(
