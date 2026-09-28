@@ -1,15 +1,11 @@
-import React, {useState} from 'react'
+import React from 'react'
 import {ArrowUpRight, CircleQuestionMark, Filter, HeartHandshake, Search} from 'lucide-react'
 import {useNavigate} from 'react-router-dom'
 import learningperson from '../../assets/learningperson.png'
 
-const ContributionHeader = ({search, setSearch, filterCount, onFilterClick}) => {
-  const [searched, setSearched] = useState(false)
+const ContributionHeader = ({search, setSearch, onSearch, filterCount, onFilterClick}) => {
+  
   const navigate = useNavigate()
-
-  const handleSearch = () => {
-    setSearched(true)
-  }
 
   return (
     <div>
@@ -55,14 +51,16 @@ const ContributionHeader = ({search, setSearch, filterCount, onFilterClick}) => 
         </button>
 
         <div className="flex w-full lg:w-[78%] xl:w-[72%] mt-4">
-          <div className={`flex flex-1 items-center h-11 px-4 bg-white border rounded-l-lg shadow-sm ${searched ? 'border-indigo-400' : 'border-gray-200'}`}>
+          <div className="flex flex-1 items-center h-11 px-4 bg-white border border-gray-200 rounded-l-lg shadow-sm">
             <Search size={18} className="mr-3 text-gray-400 shrink-0" />
 
             <input
               value={search}
-              onChange={event => {
-                setSearch(event.target.value)
-                setSearched(false)
+              onChange={event => setSearch(event.target.value)}
+              onKeyDown={event => {
+                if (event.key === 'Enter') {
+                  onSearch()
+                }
               }}
               type="text"
               placeholder="Search issues, repos, or keywords..."
@@ -71,7 +69,7 @@ const ContributionHeader = ({search, setSearch, filterCount, onFilterClick}) => 
           </div>
 
           <button
-            onClick={handleSearch}
+            onClick={onSearch}
             className="h-11 px-5 sm:px-6 font-medium text-white bg-indigo-600 rounded-r-lg hover:bg-indigo-700 active:bg-indigo-800 transition"
           >
             Search

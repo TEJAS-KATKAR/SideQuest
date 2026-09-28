@@ -1,6 +1,7 @@
 import gitfinal from '../../assets/gitfinal.png'
 import {Search} from 'lucide-react'
 import {useNavigate} from 'react-router-dom'
+import {useState} from 'react'
 
 const trendingTopics = [
   'React',
@@ -24,6 +25,13 @@ const HeroBanner = () => {
     }
 
     navigate(`/explore?q=${encodeURIComponent(topic)}`)
+  }
+  const [search, setSearch] = useState('')
+
+  const handleSearch = () => {
+    const query = search.trim()
+    if (!query) return
+    navigate(`/explore?q=${encodeURIComponent(query)}`)
   }
 
   return (
@@ -52,12 +60,20 @@ const HeroBanner = () => {
 
             <input
               type="text"
+              value={search}
+              onChange={event => setSearch(event.target.value)}
+              onKeyDown={event => {
+                if (event.key === 'Enter') {
+                  handleSearch()
+                }
+              }}
               placeholder="Search repositories, topics, or languages..."
               className="w-full min-w-0 bg-transparent text-base text-gray-700 outline-none placeholder:text-gray-400 md:text-sm"
             />
           </div>
 
           <button
+            onClick={handleSearch}
             className="h-14 shrink-0 rounded-r-xl bg-indigo-600 px-4 text-sm font-semibold text-white transition hover:bg-indigo-700 md:h-12 md:px-7 md:font-medium"
           >
             Search
